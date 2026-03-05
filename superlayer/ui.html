@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <meta charset="UTF-8" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #F8F4EE;
+      color: #1D3E73;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 12px;
+      box-sizing: border-box;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1D3E73;
+    }
+
+    .count {
+      font-size: 14px;
+      font-weight: 400;
+      color: #1D3E73;
+    }
+
+    .controls {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+    }
+
+    .list {
+      max-height: 240px;
+      overflow-y: auto;
+      border-top: 1px solid #1D3E73;
+      border-bottom: 1px solid #1D3E73;
+      padding: 8px;
+      background: #F8F4EE;
+    }
+
+    .layer-item {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      gap: 12px;
+    }
+
+    .layer-type {
+      width: 32px;
+      text-align: center;
+      font-size: 12px;
+      color: #1D3E73;
+      font-weight: 500;
+      background: #fff;
+      border: 1px solid #1D3E73;
+      border-radius: 2px;
+      padding: 2px 4px;
+      flex-shrink: 0;
+    }
+
+    .layer-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #fff;
+      background-color: #1D3E73;
+      border: 1px solid;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    button:hover {
+      background-color: #142C53;
+    }
+
+    button .icon {
+      width: 16px;
+      height: 16px;
+    }
+
+    .sort-select {
+      font-size: 14px;
+      padding: 4px;
+      margin-left: auto;
+    }
+    select#sortMode {
+      appearance: none;
+      font-size: 14px;
+      padding: 6px 28px 6px 12px;
+      width: 80px;
+      border-top: 1px solid #1D3E73;
+      border-bottom: 1px solid #1D3E73;
+      border-right: 0px;
+      border-left: 0px;
+      background-color: #F8F4EE;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 12px 8px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    select#sortMode:hover {
+      border-color: #142C53;
+    }
+
+    select#sortMode:focus {
+      border-color: #1D3E73;
+      box-shadow: 0 0 0 2px rgba(0, 85, 212, 0.2);
+      outline: none;
+    }
+    .empty-state {
+      height: 24px;
+      display: flex;
+      flex-direction: row; /* ⬅️ Make it horizontal */
+      align-items: center; /* ⬅️ Vertical centering */
+      justify-content: center;
+      gap: 16px;
+      color: #1D3E73;
+      font-size: 12px;
+      font-weight: 500;
+      font-style: italic;
+      text-align: left;
+    }
+    .empty-state .icon {
+      width: 24px;
+      height: 24px;
+      color: #1D3E73;
+    }
+    .sort-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .sort-icon {
+      width: 16px;
+      height: 16px;
+      color: #1D3E73;
+      transform: scaleX(-1); /* Flip horizontally */
+    }
+
+    input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #1D3E73; /* native styling support in modern browsers */
+      cursor: pointer;
+    }
+    
+    button.copied {
+      background-color: #F8F4EE !important; /* temporary green flash */
+      border: 1px solid #1D3E73;
+      color: #1D3E73;
+      animation: flash 0.2s ease;
+    }
+
+    @keyframes flash {
+      0%   { background-color: #F8F4EE; }
+      100% { background-color: #1D3E73; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h3>Selected Layers</h3>
+      <span class="count" id="layerCount">(0)</span>
+    </div>
+
+    <div class="controls">
+      <label><input type="checkbox" id="selectAll" checked /> Select All</label>
+      <div class="sort-wrapper">
+        <i data-lucide="arrow-down-wide-narrow" class="icon sort-icon"></i>
+        <select id="sortMode" class="sort-select" style="font-size: 13px; padding: 4px;; color: #1D3E73">
+          <!-- <option value="layer">File</option> -->
+          <option value="az">A - Z</option>
+          <option value="type">Type</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="list" id="layerList">
+      <div id="emptyState" style="display: none;" class="empty-state">
+        <i data-lucide="snail" class="icon"></i>
+        <p>– Select Some Layers Dawg</p>
+      </div>
+    </div>
+
+    <button id="copyBtn">
+      <i data-lucide="copy" class="icon"></i>
+      <span>Copy</span>
+    </button>
+  </div>
+
+  <script>
+    let layerData = [];
+    let lastHeight = 0;
+  
+    parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
+  
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (msg.type === 'layer-data') {
+        layerData = msg.payload;
+        renderList();
+      }
+    };
+
+    function getTypeLabel(type) {
+      const map = {
+        "FRAME": "FRAM",
+        "GROUP": "GRUP",
+        "TEXT": "TEXT",
+        "RECTANGLE": "RECT",
+        "ELLIPSE": "ELIP",
+        "POLYGON": "POLY",
+        "STAR": "STAR",
+        "LINE": "LINE",
+        "VECTOR": "VECT",
+        "BOOLEAN_OPERATION": "BOOL",
+        "INSTANCE": "INST",
+        "COMPONENT": "COMP",
+        "COMPONENT_SET": "SET",
+        "IMAGE": "IMAG",
+        "SLICE": "SLIC",
+        "SHAPE_WITH_TEXT": "NOTE",
+        "CONNECTOR": "CONN",
+        "STAMP": "STMP",
+        "STICKY" : "STKY",
+        "EMBED": "EMBD",
+        "WIDGET": "WDGT"
+      };
+      return map[type] || type.slice(0, 4).toUpperCase();
+    }
+
+    function renderList() {
+        const list = document.getElementById("layerList");
+        const empty = document.getElementById("emptyState");
+        list.innerHTML = "";
+        list.appendChild(empty); // reattach empty state after clearing
+
+        if (layerData.length === 0) {
+          empty.style.display = "flex";
+          document.getElementById("copyBtn").disabled = true;
+          document.getElementById("copyBtn").style.opacity = "0.4";
+          updateCount(0);
+          resizeToContent();
+          return;
+        }
+
+        empty.style.display = "none";
+        document.getElementById("copyBtn").disabled = false;
+        document.getElementById("copyBtn").style.opacity = "1";
+
+        layerData.forEach((item, index) => {
+          const div = document.createElement("div");
+          div.className = "layer-item";
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = true;
+          checkbox.dataset.index = index;
+
+          const typeLabel = document.createElement("span");
+          typeLabel.className = "layer-type";
+          typeLabel.textContent = getTypeLabel(item.type);
+
+          let img;
+          if (item.thumbnail === "__t-placeholder__" || item.thumbnail === "__c-placeholder__") {
+            img = document.createElement("div");
+            img.textContent = item.thumbnail === "__t-placeholder__" ? "𝘵" : "𝘤";
+            Object.assign(img.style, {
+              fontStyle: "italic", fontSize: "14px", color: "#1D3E73",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              width: "16px", height: "16px", borderRadius: "2px", background: "#fff", flexShrink: "0", border: "1px solid #1D3E73" // ✅ Add this line
+            });
+          } else {
+            img = document.createElement("img");
+            img.src = item.thumbnail;
+            img.width = 16;
+            img.height = 16;
+            img.style.borderRadius = "2px";
+            img.style.border = "1px solid #1D3E73"
+            img.style.objectFit = "cover";
+            img.style.flexShrink = "0";
+          }
+
+          const nameLabel = document.createElement("span");
+          nameLabel.className = "layer-name";
+          nameLabel.textContent = item.name;
+
+          checkbox.addEventListener("change", () => {
+            updateCount();
+            resizeToContent();
+          });
+
+          div.appendChild(checkbox);
+          div.appendChild(typeLabel);
+          div.appendChild(img);
+          div.appendChild(nameLabel);
+          list.appendChild(div);
+        });
+
+        updateCount();
+        resizeToContent();
+      }
+        
+    document.getElementById("selectAll").addEventListener("change", (e) => {
+      const checkboxes = document.querySelectorAll("#layerList input[type='checkbox']");
+      checkboxes.forEach(cb => cb.checked = e.target.checked);
+      updateCount();
+      resizeToContent();
+    });
+  
+    document.getElementById("sortMode").addEventListener("change", (e) => {
+      parent.postMessage({ pluginMessage: { type: "sort-change", value: e.target.value } }, '*');
+    });
+  
+    function updateCount() {
+      const checkboxes = document.querySelectorAll("#layerList input[type='checkbox']");
+      const count = Array.from(checkboxes).filter(cb => cb.checked).length;
+      document.getElementById("layerCount").textContent = `(${count})`;
+    }
+  
+    document.getElementById("copyBtn").onclick = () => {
+      const button = document.getElementById("copyBtn");
+      const buttonText = button.querySelector("span");
+      const originalText = buttonText.textContent;
+
+      const checkboxes = document.querySelectorAll("#layerList input[type='checkbox']");
+      const selected = [];
+
+      checkboxes.forEach((cb, idx) => {
+        if (cb.checked) {
+          selected.push(layerData[idx].name);
+        }
+      });
+
+      if (selected.length > 0) {
+        const tempArea = document.createElement("textarea");
+        tempArea.value = selected.join("\n");
+        document.body.appendChild(tempArea);
+        tempArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempArea);
+
+        // Show copied animation and text
+        button.classList.add("copied");
+        buttonText.textContent = "Copied";
+        button.disabled = true;
+
+        setTimeout(() => {
+          button.classList.remove("copied");
+          buttonText.textContent = originalText;
+          button.disabled = false;
+        }, 1000);
+      }
+    };
+  
+    function requestResize(height) {
+      parent.postMessage({ pluginMessage: { type: 'resize', height } }, '*');
+    }
+  
+    function resizeToContent() {
+      requestAnimationFrame(() => {
+        const container = document.querySelector(".container");
+        if (container) {
+          const newHeight = container.offsetHeight;
+          if (Math.abs(newHeight - lastHeight) > 5) {
+            lastHeight = newHeight;
+            requestResize(newHeight);
+          }
+        }
+      });
+    }
+  
+    lucide.createIcons();
+  </script>
+</body>
+</html>
