@@ -1,0 +1,10 @@
+{
+  "name": "SuperLayer (copy)",
+  "id": "1501252915262503118",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma", "figjam", "slides"],
+  "networkAccess": { "allowedDomains": ["https://unpkg.com"] },
+  "documentAccess": "dynamic-page"
+}
