@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /*
+      TokenMAX — Design System
+      ─────────────────────────
+      Page bg    #F2F4F8  cool stone; elevates white surfaces
+      Surface    #FFFFFF  cards, inputs
+      Hover      #F4F7FC  row/interactive hover
+      Navy       #1D3E73  brand anchor, primary actions
+      Navy dk    #162D56  pressed states
+      Txt 1      #111827  primary — near-black, cool undertone
+      Txt 2      #4B5A72  secondary — folders, helper text
+      Txt 3      #8492A8  tertiary — labels, mode names
+      Brd sub    #E2E8F2  row separators, section lines
+      Brd med    #C8D2E4  inputs, badges, interactive borders
+    */
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      padding: 16px;
+      margin: 0;
+      background: #202128;
+      color: #111827;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ── */
+    .header {
+      font-size: 13px; font-weight: 700; letter-spacing: -0.01em;
+      padding-bottom: 12px; border-bottom: 1px solid #E2E8F2;
+      margin-bottom: 0; display: flex; justify-content: space-between; align-items: center;
+      color: #fff;
+    }
+
+    .tree-container { margin-bottom: 80px; width: 100%; }
+
+    /* ── Tabs ── */
+    .tabs-nav {
+      display: flex; gap: 0; margin-bottom: 16px;
+      border-bottom: 1px solid #323944; margin-top: 0; padding-top: 2px;
+    }
+    .tab-btn {
+      padding: 10px 16px; cursor: pointer; border: none; background: none;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase;
+      color: rgba(255,255,255,0.7); border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: color 0.12s ease;
+    }
+    .tab-btn:hover { color: #ADD3E2; }
+    .tab-btn.active { color: #fff; border-bottom-color: #ADD3E2; }
+    .tab-btn.active:hover { color: #ADD3E2; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Drop Zone ── */
+    #drop-zone {
+      border: 1.5px dashed #ADD3E2; border-radius: 10px; padding: 36px 24px;
+      text-align: center; color: #ADD3E2; font-size: 12px; line-height: 1.6;
+      transition: background 0.15s ease, border-color 0.15s ease;
+      cursor: pointer; margin-bottom: 16px;
+    }
+    #drop-zone:hover { background: rgba(173,211,226,0.06); border-color: #ADD3E2; }
+    #drop-zone.dragover { background: rgba(173,211,226,0.12); border-color: #ADD3E2; color: #ADD3E2; }
+
+    .snail-wrapper { display: inline-flex; align-items: flex-end; gap: 6px; margin-bottom: 10px; }
+    .speech-bubble {
+      background: #ADD3E2; color: #202128; font-size: 10px; font-weight: 600;
+      padding: 5px 10px; border-radius: 10px; white-space: nowrap; line-height: 1.4;
+      position: relative; margin-bottom: 6px; letter-spacing: 0.01em;
+    }
+    .speech-bubble::after {
+      content: ''; position: absolute; bottom: -5px; left: 12px;
+      border-left: 5px solid transparent; border-right: 5px solid transparent;
+      border-top: 5px solid #ADD3E2;
+    }
+
+    /* ── Icon Button (refresh) ── */
+    .icon-btn {
+      width: 26px; min-width: 26px; max-width: 26px; height: 26px;
+      padding: 0; display: flex; align-items: center; justify-content: center;
+      background: #FFFFFF; color: #1D3E73;
+      border: 1px solid #C8D2E4; border-radius: 6px;
+      cursor: pointer; flex-grow: 0; flex-shrink: 0;
+      transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+    .icon-btn:hover { background: #F4F7FC; border-color: #A8B8D0; box-shadow: 0 1px 4px rgba(17,24,39,0.08); }
+    .icon-btn:active { background: #EBF0FA; }
+    .icon-btn:disabled { opacity: 0.35; cursor: default; }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .spinning { animation: spin 1s linear infinite; }
+
+    /* ── Diff / Changelog Table ── */
+    .diff-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 16px; margin-bottom: 80px; border-radius: 8px; overflow: hidden; }
+    .diff-table th {
+      text-align: left; background: #F4F7FC; padding: 8px 10px;
+      border: 1px solid #E2E8F2; color: #4B5A72;
+      font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .diff-table td { padding: 8px 10px; border: 1px solid #E2E8F2; vertical-align: top; word-break: break-all; color: #1E2B3C; }
+    .diff-table td { vertical-align: middle; }
+    .diff-row:hover { background: #F4F7FC; }
+    .mode-change-list { display: flex; flex-direction: column; gap: 5px; }
+    .mode-change-item {
+      display: grid; grid-template-columns: 100px 1fr 15px 1fr;
+      align-items: center; background: #FFFFFF;
+      padding: 5px 8px; border-radius: 5px; border: 1px solid #E2E8F2;
+    }
+    .arrow-icon { color: #8492A8; font-size: 10px; text-align: center; }
+    .val-pill {
+      font-family: 'SF Mono', 'Roboto Mono', monospace;
+      font-size: 10px; padding: 2px 5px; border-radius: 3px; word-break: break-all;
+    }
+    .val-old  { color: #B91C1C; background: #FEF2F2; }
+    .val-new  { color: #0F7B4A; background: #F0FDF6; }
+    .val-removed { color: #8492A8; background: #F4F7FC; text-decoration: line-through; }
+
+    /* ── Collections ── */
+    .collection {
+      margin-bottom: 8px;
+      border: none;
+      border-radius: 8px; overflow: hidden;
+      background: #323944;
+      box-shadow: 0 1px 2px rgba(17,24,39,0.04), 0 3px 8px rgba(17,24,39,0.04);
+      transition: box-shadow 0.15s ease;
+    }
+    .collection:hover { box-shadow: 0 1px 3px rgba(17,24,39,0.06), 0 4px 12px rgba(17,24,39,0.06); }
+    .folder { margin-left: 20px; padding-left: 8px; }
+    /* Vertical rule lives on the content-block so the header row sits above it.
+       left: 9px = chevron center within content-block
+       (folder padding 8px + header padding 4px + half-chevron 5px = 17px from folder left;
+        content-block offset 8px → 17-8 = 9px within content-block) */
+    .folder > .content-block { position: relative; }
+    .folder.expanded > .content-block::before {
+      content: ''; position: absolute;
+      left: 9px; top: 14px; bottom: 14px;
+      width: 1.5px; background: #323944;
+      pointer-events: none;
+    }
+    /* Collection root-level vertical line (no collection padding → left: 17px) */
+    .collection > .content-block { position: relative; background: #2A2D35; padding-top: 2px; }
+    .collection > .content-block::before {
+      content: ''; position: absolute;
+      left: 17px; top: 14px; bottom: 14px;
+      width: 1.5px; background: #323944;
+      pointer-events: none;
+    }
+
+    .col-header, .folder-header {
+      background: #323944; padding: 9px 12px; display: flex; align-items: center;
+      font-weight: 700; cursor: pointer; font-size: 10px;
+      color: #fff; text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: none;
+    }
+    .col-header:hover { background: #3a424e; border-radius: 4px; }
+    .folder-header {
+      background: #323944; padding: 6px 12px 6px 4px; border-bottom: none;
+      color: #fff; font-weight: 700; text-transform: none; letter-spacing: 0; font-size: 11px;
+      border-radius: 4px; margin: 2px;
+    }
+    .folder-header:hover { background: #3a424e; border-radius: 4px; }
+
+    .chevron { margin-right: 8px; font-size: 10px; transition: transform 0.18s ease; display: inline-block; width: 10px; color: #fff; }
+    .content-block { display: none; }
+    .expanded > .content-block { display: block; }
+    .expanded > .col-header > .chevron, .expanded > .folder-header > .chevron { transform: rotate(90deg); }
+
+    /* ── Variable Rows ── */
+    .var-list { padding: 4px 12px 8px 12px; }
+    .var-item {
+      display: flex; align-items: center; padding: 7px 12px; font-size: 11px;
+      position: relative; border-radius: 4px;
+      transition: background 0.1s ease;
+    }
+    .var-item::after {
+      content: ''; position: absolute;
+      left: 12px; right: 0; bottom: 0; height: 1px;
+      background: #323944;
+    }
+    .var-item:last-child::after { display: none; }
+    .var-item:hover { background: #3a424e; }
+    .var-item.is-hidden { opacity: 0.4; font-style: italic; }
+    .var-name {
+      flex: 1; margin-right: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: #fff; font-weight: 400;
+    }
+
+    .var-type {
+      font-family: 'SF Mono', 'Roboto Mono', monospace;
+      color: #ADD3E2; font-size: 8px; font-weight: 600; letter-spacing: 0.04em;
+      border: 1px solid #ADD3E2; padding: 2px 0;
+      border-radius: 3px; text-transform: uppercase; background: transparent; flex-shrink: 0;
+      text-align: center; width: 44px; margin-left: 8px;
+      transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+    }
+    .var-item:has(.var-check:checked) .var-type {
+      background: #ADD3E2; color: #202128; border-color: #ADD3E2;
+    }
+
+    /* ── Mode / Value Display ── */
+    .val-text {
+      font-family: 'SF Mono', 'Roboto Mono', monospace;
+      font-size: 8px; text-transform: uppercase; letter-spacing: 0.03em;
+      color: #C8D2E4; text-align: center; width: 100%; white-space: nowrap;
+    }
+    .val-text.selected { color: #1D3E73; font-weight: 600; transition: color 0.1s ease; }
+
+    /* ── Mode Column Track ── */
+    /* Inline layout: [checkbox] [name] [↳ icon] — consistent 96px across all collections */
+    .mode-header-container { display: flex; align-items: center; margin-left: auto; flex-shrink: 0; gap: 6px; }
+    .column-track {
+      flex: 0 0 96px; width: 96px;
+      display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; flex-shrink: 0;
+    }
+    .mode-label {
+      font-size: 9px; color: #fff; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      flex: 1; min-width: 0;
+    }
+    /* Stacked layout below 500px plugin width */
+    @media (max-width: 500px) {
+      .column-track {
+        flex: 0 0 56px; width: 56px;
+        flex-direction: column; align-items: center; gap: 2px;
+      }
+      .mode-label { text-align: center; width: 100%; }
+    }
+    .preview-group { display: flex; align-items: center; margin-left: auto; flex-shrink: 0; }
+
+    .color-preview {
+      width: 14px; height: 14px; border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0;
+      transition: box-shadow 0.1s ease;
+    }
+    .color-preview + .color-preview { margin-left: -4px; }
+    /* box-shadow avoids overflow:hidden clipping; z-index lifts above overlapping siblings */
+    .color-preview.selected {
+      position: relative; z-index: 1;
+      box-shadow: 0 0 0 1px #2A2D35, 0 0 0 2px #ADD3E2;
+    }
+
+    .folder-check { margin: 0 8px 0 0 !important; width: 14px !important; height: 14px !important; cursor: pointer; flex-shrink: 0; }
+
+    /* ── Footer ── */
+    .footer {
+      position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 16px; z-index: 100;
+      background: rgba(242,244,248,0.94); backdrop-filter: blur(20px) saturate(180%);
+      border-top: 1px solid #E2E8F2; display: flex; align-items: center; gap: 8px;
+    }
+
+    .toggle-container {
+      display: flex; align-items: center; gap: 0; margin-right: 12px;
+      font-size: 11px; font-weight: 500; color: #4B5A72;
+      cursor: pointer; user-select: none; flex-shrink: 0;
+    }
+    .toggle-container input { margin: 0; width: 12px; height: 12px; cursor: pointer; }
+    input[type="checkbox"] { margin-right: 8px; cursor: pointer; width: 14px; height: 14px; accent-color: #ADD3E2; }
+
+    /* ── Buttons ── */
+    button {
+      flex: 1; height: 30px; border-radius: 6px; border: none; cursor: pointer;
+      font-weight: 600; font-size: 11px; letter-spacing: 0.01em;
+      transition: background 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    }
+
+    #export-btn {
+      background: #1D3E73; color: #fff;
+    }
+    #export-btn:hover { background: #162D56; box-shadow: 0 2px 8px rgba(29,62,115,0.3); }
+    #export-btn:active { background: #0F1F45; }
+
+    #select-all {
+      background: #FFFFFF; color: #1D3E73; border: 1px solid #C8D2E4; flex: 0 0 96px;
+    }
+    #select-all:hover { background: #F4F7FC; border-color: #A8B8D0; }
+
+    #export-csv-btn { background: #1D3E73; color: #fff; }
+    #export-csv-btn:hover { background: #162D56; box-shadow: 0 2px 8px rgba(29,62,115,0.3); }
+
+    #export-txt-btn { background: #FFFFFF; color: #4B5A72; border: 1px solid #C8D2E4; }
+    #export-txt-btn:hover { background: #F4F7FC; }
+
+    #export-json-btn { background: #6B46C1; color: #fff; }
+    #export-json-btn:hover { background: #553898; box-shadow: 0 2px 8px rgba(107,70,193,0.3); }
+
+    /* Export preset select — override inline styles */
+    #export-preset {
+      height: 30px !important; border-radius: 6px !important;
+      border: 1px solid #C8D2E4 !important; font-size: 11px !important;
+      padding: 0 8px !important; cursor: pointer; background: #FFFFFF;
+      color: #1D3E73; font-weight: 500; margin-right: 8px;
+      transition: border-color 0.12s ease;
+    }
+    #export-preset:focus { outline: none; border-color: #1D3E73 !important; }
+
+    .changelog-btn-disabled { opacity: 0.3 !important; cursor: not-allowed; pointer-events: none; }
+
+    /* ── Changelog checkbox column ── */
+    .diff-table .col-check-th { width: 28px; padding: 8px 4px; text-align: center; }
+    .diff-row td.col-check-td { width: 28px; padding: 8px 4px; text-align: center; vertical-align: middle; }
+    .change-check { width: 14px; height: 14px; cursor: pointer; margin: 0; display: inline-block; }
+
+    /* ── Child / Parent Mode Controls ── */
+    .child-toggle {
+      font-size: 11px; color: #C8D2E4; cursor: pointer; margin: 0; flex-shrink: 0;
+      line-height: 1; user-select: none; width: 16px; height: 16px;
+      display: flex; align-items: center; justify-content: center; border-radius: 3px;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .child-toggle:hover { background: #EEF3FB; color: #4B5A72; }
+    .child-toggle.active { background: #EEF3FB; color: #1D3E73; font-weight: 700; }
+
+    .mode-col-check { margin: 0 !important; width: 12px !important; height: 12px !important; cursor: pointer; flex-shrink: 0; }
+
+    .parent-select {
+      flex-basis: 100%; width: 100%; font-size: 9px;
+      border: 1px solid #C8D2E4; border-radius: 3px; height: 18px;
+      background: #FFFFFF; color: #4B5A72; padding: 0 2px; cursor: pointer;
+      box-sizing: border-box;
+    }
+    .parent-select:focus { outline: 1.5px solid #1D3E73; border-color: #1D3E73; }
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span>TokenMAX</span>
+    <div style="display:flex; gap:6px; align-items:center;">
+      <button id="expand-btn" class="icon-btn" title="Expand">
+        <i id="icon-maximize" data-lucide="maximize-2" style="width:14px;height:14px;stroke-width:2;display:block;"></i>
+        <i id="icon-minimize" data-lucide="minimize-2" style="width:14px;height:14px;stroke-width:2;display:none;"></i>
+      </button>
+      <button id="refresh-btn" class="icon-btn" title="Refresh Variables">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="tabs-nav">
+    <div class="tab-btn active" onclick="switchTab('export-tab', this)">Export</div>
+    <div class="tab-btn" onclick="switchTab('changelog-tab', this)">Change Log</div>
+  </div>
+  
+  <div id="export-tab" class="tab-content active">
+    <div id="tree" class="tree-container">Gathering file variables...</div>
+  </div>
+  
+  <div id="changelog-tab" class="tab-content">
+    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="snail-wrapper">
+        <div style="display:flex; flex-direction:column; align-items:flex-start;">
+          <div class="speech-bubble">$Make it Rain!</div>
+          <i data-lucide="snail" style="width: 28px; height: 28px; color: #ADD3E2;"></i>
+        </div>
+      </div><br>
+      Drag & Drop a previous JSON here <br> or <strong>click to browse</strong>
+      <input type="file" id="file-input" style="display:none" accept=".json">
+    </div>
+    <div id="diff-results"></div>
+  </div>
+  
+  <div class="footer" id="footer-export">
+    <label class="toggle-container">
+      <input type="checkbox" id="show-hidden-toggle">
+      <span>Include Hidden</span>
+    </label>
+    <label class="toggle-container">
+      <input type="checkbox" id="expose-underlying-toggle">
+      <span>Expose Underlying</span>
+    </label>
+    
+    <select id="export-preset" style="margin-right: 8px; height: 32px; border-radius: 6px; border: 1px solid #eee; font-size: 12px; padding: 0 8px; cursor: pointer;">
+     <option value="Default">Default</option>
+        <option value="iOS">iOS</option>
+        <option value="iOS2">iOS2</option>
+        <option value="iOS3">iOS3</option> </select>
+
+    <button id="select-all">Select All</button>
+    <button id="export-btn">Export JSON</button>
+  </div>
+
+  <div class="footer" id="footer-changelog" style="display: none;">
+    <label class="toggle-container">
+      <input type="checkbox" id="changelog-include-hidden">
+      <span>Include Hidden</span>
+    </label>
+    <label class="toggle-container">
+      <input type="checkbox" id="changelog-include-excluded">
+      <span>Show Excluded</span>
+    </label>
+    
+    <button id="export-txt-btn">Export .txt</button>
+    <button id="export-csv-btn">Export .csv</button>
+    <button id="export-json-btn">Export .json</button>
+  </div>
+
+  <script>
+    let collectionsData = [];
+    let aliasMap = {};
+    let currentFileName = "Local File";
+    let currentChanges = []; 
+    
+    // NEW: Store uploaded data globally so we can re-run comparison when toggling hidden vars
+    let lastUploadedData = null; 
+    let lastUploadedFileName = "";
+
+    // NEW: Track child modes
+    let childModes = new Set();
+
+    // NEW: Track Parent assignments { "colId|childModeId": "parentModeId" }
+    let parentAssignments = {};
+
+    // ── Expand / Collapse state ──
+    let isExpanded = false;
+    let savedSize     = { width: 0, height: 0 };
+    let savedPosition = { x: 0, y: 0 };
+
+    // Continuously track size + position while NOT expanded,
+    // so clicking expand snapshots the current state to restore on collapse.
+    window.addEventListener('resize', () => {
+      if (!isExpanded) {
+        savedSize     = { width: window.innerWidth, height: window.innerHeight };
+        savedPosition = { x: window.screenX, y: window.screenY };
+      }
+    });
+    window.addEventListener('mousemove', () => {
+      if (!isExpanded) {
+        savedPosition = { x: window.screenX, y: window.screenY };
+      }
+    });
+
+    window.onload = () => {
+      parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
+      ['export-btn', 'export-txt-btn', 'export-csv-btn', 'export-json-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.add('changelog-btn-disabled');
+      });
+
+      document.getElementById('expand-btn').onclick = () => {
+        if (!isExpanded) {
+          // Snapshot size + position right before expanding
+          savedSize     = { width: window.innerWidth,  height: window.innerHeight };
+          savedPosition = { x: window.screenX,         y: window.screenY };
+
+          // Compute expanded size relative to screen.
+          // figma.ui.reposition(x,y) is relative to the Figma app window origin.
+          // window.screenX/Y gives the Figma window's screen position, so we
+          // subtract it to convert screen-center coords into Figma-relative coords.
+          const screenW = window.screen.availWidth;
+          const screenH = window.screen.availHeight;
+          const w = Math.max(400, Math.round(screenW - 400));
+          const h = Math.max(300, Math.round(screenH - 80));
+          const targetScreenX = Math.round((screenW - w) / 2);
+          const targetScreenY = Math.round((screenH - h) / 2);
+          const x = targetScreenX - window.screenX;
+          const y = targetScreenY - window.screenY;
+
+          parent.postMessage({ pluginMessage: { type: 'resize', width: w, height: h, x, y } }, '*');
+          document.getElementById('icon-maximize').style.display = 'none';
+          document.getElementById('icon-minimize').style.display = 'block';
+          isExpanded = true;
+        } else {
+          // Restore the exact size + position from the moment expand was clicked
+          parent.postMessage({ pluginMessage: {
+            type: 'resize',
+            width:  savedSize.width,
+            height: savedSize.height,
+            x: savedPosition.x,
+            y: savedPosition.y
+          }}, '*');
+          document.getElementById('icon-maximize').style.display = 'block';
+          document.getElementById('icon-minimize').style.display = 'none';
+          isExpanded = false;
+        }
+      };
+    };
+
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (msg.type === 'load-data') {
+        collectionsData = msg.collections;
+        aliasMap = msg.variableMap;
+        currentFileName = msg.fileName;
+        render(); 
+        document.getElementById('show-hidden-toggle').onchange = () => render();
+
+        // Reset Refresh Button
+        const btn = document.getElementById('refresh-btn');
+        if(btn) {
+            btn.innerText = "↻ Refresh";
+            btn.disabled = false;
+        }
+      }
+    };
+
+    // --- REFRESH LOGIC ---
+    // --- UPDATED REFRESH BUTTON LISTENER ---
+    document.getElementById('refresh-btn').onclick = () => {
+      const btn = document.getElementById('refresh-btn');
+      const icon = btn.querySelector('svg');
+      
+      btn.disabled = true;
+      if(icon) icon.classList.add('spinning'); // Start animation
+      
+      // Request refresh from backend
+      parent.postMessage({ pluginMessage: { type: 'refresh-variables' } }, '*');
+    };
+
+    // --- UPDATED MESSAGE HANDLER (Fixes Table Refresh) ---
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      
+      if (msg.type === 'load-data') {
+        // 1. Update Global Data
+        collectionsData = msg.collections;
+        aliasMap = msg.variableMap;
+        currentFileName = msg.fileName;
+        
+        // 2. Re-render Tree
+        render(); 
+        document.getElementById('show-hidden-toggle').onchange = () => render();
+
+        // 3. FIX: Re-run Comparison if a file is currently loaded
+        if (lastUploadedData && lastUploadedFileName) {
+            console.log("Refreshed data received. Updating comparison...");
+            runComparison(lastUploadedData, lastUploadedFileName);
+        }
+
+        // 4. Reset Refresh Button State
+        const btn = document.getElementById('refresh-btn');
+        if(btn) {
+            const icon = btn.querySelector('svg');
+            btn.disabled = false;
+            if(icon) icon.classList.remove('spinning'); 
+        }
+      }
+    };
+
+    // --- COMPARISON TOGGLE LISTENER ---
+    document.getElementById('changelog-include-excluded').onchange = () => {
+      if (lastUploadedData && lastUploadedFileName) {
+        runComparison(lastUploadedData, lastUploadedFileName);
+      }
+    };
+
+   // --- TREE & RENDER LOGIC (No Changes) ---
+   function buildTree(variables) {
+      const root = {};
+      variables.forEach(v => {
+        const parts = v.name.split('/');
+        let current = root;
+        parts.forEach((part, index) => {
+          if (index === parts.length - 1) {
+            current.__vars = current.__vars || [];
+            current.__vars.push(v);
+          } else {
+            current[part] = current[part] || {};
+            current = current[part];
+          }
+        });
+      });
+      return root;
+    }
+
+    function generateTreeHTML(node, folderName, colId, depth = 0, parentPath = '', parentIsAllHidden = false) {
+      let html = '';
+      const nodeAllHidden = isNodeAllHidden(node);
+      const showFolderHiddenLabel = nodeAllHidden && !parentIsAllHidden;
+      const folderLabel = showFolderHiddenLabel ? ' <span style="color: #999; font-weight: 400; font-size: 10px; margin-left: 4px;">(hidden)</span>' : '';
+
+      let displayName = folderName || '';
+      if (folderName && parentPath) { displayName = `${parentPath} / ${folderName}`; }
+
+      if (folderName) {
+        const checkboxHtml = depth === 1 ? `<input type="checkbox" class="folder-check" onclick="toggleFolderVars(this, event)">` : '';
+        html += `<div class="folder expanded depth-${depth}">
+                  <div class="folder-header" onclick="toggleElement(this.parentElement)">
+                    <span class="chevron">›</span>${checkboxHtml}<span>${displayName}${folderLabel}</span>
+                  </div>
+                  <div class="content-block">`;
+      }
+
+      if (node.__vars) {
+        html += `<div class="var-list">`;
+        node.__vars.forEach(v => {
+          const col = collectionsData.find(c => c.id === colId);
+          const modeCount = col ? col.modes.length : 0;
+          const showVarHiddenLabel = v.hidden && !nodeAllHidden;
+          const varLabel = showVarHiddenLabel ? ' <span style="color: #999; font-weight: 400; font-size: 9px; margin-left: 4px;">(hidden)</span>' : '';
+
+          const formatDisplayValue = (val, type) => {
+            if (val === undefined || val === null) return '';
+            if (val.type === 'VARIABLE_ALIAS') return `<span style="color:#1D3E73">{}</span>`;
+            if (type === 'FLOAT') { const s = String(val); return s.length > 4 ? s.substring(0, 4) + '...' : s; }
+            if (type === 'STRING') return val.length > 6 ? val.substring(0, 4) + '...' : val;
+            if (type === 'BOOLEAN') return val ? 'True' : 'False';
+            return '';
+          };
+
+          const getBox = (modeIdx) => {
+            if (modeIdx >= modeCount) return '';
+            const mode = col.modes[modeIdx];
+            const rawValue = v.valuesByMode[mode.modeId];
+            let content = '';
+            
+            if (v.type === 'COLOR') {
+              // OLD: const colorProps = [v.uiPreviewColor, ...]; const val = colorProps[modeIdx];
+              
+              // NEW: Access dynamically by ID
+              const val = v.resolvedValuesByMode ? v.resolvedValuesByMode[mode.modeId] : null;
+
+              if (val && typeof val === 'object' && 'r' in val) {
+                const cssColor = `rgba(${Math.round(val.r*255)}, ${Math.round(val.g*255)}, ${Math.round(val.b*255)}, ${val.a})`;
+                content = `<div class="color-preview mode-idx-${modeIdx}" style="background-color: ${cssColor};"></div>`;
+              }
+            } else {
+              content = `<span class="val-text mode-idx-${modeIdx}">${formatDisplayValue(rawValue, v.type)}</span>`;
+            }
+            return `<div class="column-track">${content}</div>`;
+          };
+
+          let tracksHtml = '';
+          for (let i = 0; i < modeCount; i++) { tracksHtml += getBox(i); }
+          const previewsHtml = `<div class="preview-group">${tracksHtml}<div style="width: 55px;"></div></div>`;
+          const typeLabels = { 'COLOR': 'Color', 'FLOAT': 'Number', 'STRING': 'String', 'BOOLEAN': 'Boolean' };
+          
+          html += `
+            <div class="var-item ${v.hidden ? 'is-hidden' : ''}" style="${v.hidden ? 'opacity: 0.6;' : ''}"
+                 onclick="if(event.target.type!=='checkbox'){const c=this.querySelector('.var-check');c.checked=!c.checked;c.dispatchEvent(new Event('change'));}">
+              <input type="checkbox" class="var-check" data-colid="${colId}" value="${v.id}">
+              <span class="var-name">${v.name.split('/').pop()}${varLabel}</span>
+              ${previewsHtml}
+              <div class="var-type">${typeLabels[v.type] || v.type}</div>
+            </div>`;
+        });
+        html += `</div>`;
+      }
+      Object.keys(node).forEach(key => {
+        if (key !== '__vars') html += generateTreeHTML(node[key], key, colId, depth + 1, displayName, nodeAllHidden);
+      });
+      if (folderName) html += `</div></div>`;
+      return html;
+    }
+
+    function render() {
+      const treeContainer = document.getElementById('tree');
+      const includeHidden = document.getElementById('show-hidden-toggle').checked;
+      const savedVarIds = Array.from(document.querySelectorAll('.var-check:checked')).map(c => c.value);
+      const savedModeStates = Array.from(document.querySelectorAll('.mode-col-check')).map(c => ({
+        key: `${c.dataset.colid}-${c.dataset.modeidx}`, checked: c.checked
+      }));
+      // Save expanded states: collections by ID, folders by header text
+      const expandedCollectionIds = new Set(
+        Array.from(document.querySelectorAll('.collection.expanded .col-check')).map(c => c.dataset.id)
+      );
+      const expandedFolderLabels = new Set(
+        Array.from(document.querySelectorAll('.folder.expanded > .folder-header span:last-child')).map(s => s.textContent)
+      );
+
+      treeContainer.innerHTML = '';
+
+      collectionsData.forEach(col => {
+        const filteredVariables = includeHidden ? col.variables : col.variables.filter(v => !v.hidden);
+        if (filteredVariables.length > 0) {
+          const colIsAllHidden = col.variables.every(v => v.hidden);
+          const colLabel = (includeHidden && colIsAllHidden) ? ' <span style="color: #999; font-weight: 400; font-size: 10px; margin-left: 4px;">(hidden)</span>' : '';
+          const colTree = buildTree(filteredVariables);
+          const colEl = document.createElement('div');
+          colEl.className = 'collection'; 
+          const formatModeName = (name) => name.length <= 12 ? name : name.substring(0, 10) + '...';
+
+          // Inside render(), replace the existing modeHeadersHtml map with this:
+          const modeHeadersHtml = col.modes.map((m, idx) => {
+            const saved = savedModeStates.find(s => s.key === `${col.id}-${idx}`);
+            const isChecked = saved ? saved.checked : true;
+            
+            const modeKey = `${col.id}|${m.modeId}`;
+            const isChild = childModes.has(modeKey);
+            let parentDropdown = '';
+
+            // Generate Parent Dropdown if Child is active
+            if (isChild) {
+               const assignedParent = parentAssignments[modeKey] || "";
+               
+               // Create options from other modes in the same collection
+               const options = col.modes
+                 .filter(otherMode => otherMode.modeId !== m.modeId) // Exclude self
+                 .map(otherMode => {
+                    const isSelected = assignedParent === otherMode.modeId ? 'selected' : '';
+                    // Truncate name for UI fit
+                    const displayName = otherMode.name.length > 8 ? otherMode.name.substring(0,7) + '..' : otherMode.name; 
+                    return `<option value="${otherMode.modeId}" ${isSelected}>${displayName}</option>`;
+                 }).join('');
+
+               parentDropdown = `
+                 <select class="parent-select" 
+                         onchange="setParentMode('${col.id}', '${m.modeId}', this.value); event.stopPropagation();"
+                         onclick="event.stopPropagation()">
+                    <option value="" disabled ${assignedParent === "" ? 'selected' : ''}>Parent</option>
+                    ${options}
+                 </select>`;
+            }
+
+            return `
+              <div class="column-track">
+                <input type="checkbox" class="mode-col-check" data-colid="${col.id}" data-modeidx="${idx}" ${isChecked ? 'checked' : ''} onclick="toggleModeColumn(this); event.stopPropagation();">
+                <div class="mode-label" title="${m.name}">${formatModeName(m.name)}</div>
+                <div class="child-toggle ${isChild ? 'active' : ''}"
+                     onclick="toggleChildMode('${col.id}', '${m.modeId}'); event.stopPropagation();"
+                     title="Toggle Child Mode">↳</div>
+                ${parentDropdown}
+              </div>`;
+          }).join('');
+
+          colEl.innerHTML = `
+            <div class="col-header" onclick="toggleElement(this.parentElement)">
+              <span class="chevron">›</span>
+              <input type="checkbox" class="col-check" data-id="${col.id}" onclick="event.stopPropagation()">
+              <span style="flex-grow: 1;">${col.name}${colLabel}</span>
+              <div class="mode-header-container" onclick="event.stopPropagation()">
+                ${modeHeadersHtml}
+                <div style="width: 129px;"></div> 
+              </div>
+            </div>
+            <div class="content-block">${generateTreeHTML(colTree, null, col.id, 0, '', colIsAllHidden)}</div>`;
+          treeContainer.appendChild(colEl);
+        }
+      });
+
+      // Restore expanded states
+      treeContainer.querySelectorAll('.collection').forEach(col => {
+        const id = col.querySelector('.col-check')?.dataset.id;
+        if (id && expandedCollectionIds.has(id)) col.classList.add('expanded');
+      });
+      treeContainer.querySelectorAll('.folder').forEach(folder => {
+        const label = folder.querySelector('.folder-header span:last-child')?.textContent;
+        if (label && expandedFolderLabels.has(label)) folder.classList.add('expanded');
+      });
+
+      treeContainer.querySelectorAll('.var-check').forEach(ck => {
+        if (savedVarIds.includes(ck.value)) ck.checked = true;
+        ck.onchange = (e) => { refreshHighlights(e.target.closest('.var-item')); updateExportButtonState(); };
+      });
+
+      document.querySelectorAll('.col-check').forEach(ck => {
+        ck.onchange = (e) => {
+          const id = e.target.dataset.id;
+          const isChecked = e.target.checked;
+          const container = e.target.closest('.collection');
+          container.querySelectorAll('.folder-check').forEach(f => f.checked = isChecked);
+          container.querySelectorAll(`.var-check[data-colid="${id}"]`).forEach(v => v.checked = isChecked);
+          container.querySelectorAll('.var-item').forEach(refreshHighlights);
+          updateExportButtonState();
+        };
+      });
+      document.querySelectorAll('.var-item').forEach(refreshHighlights);
+      updateExportButtonState();
+    }
+
+    // --- UI HELPERS ---
+    function toggleElement(el) { el.classList.toggle('expanded'); }
+    function toggleModeColumn(checkbox) { checkbox.closest('.collection').querySelectorAll('.var-item').forEach(refreshHighlights); }
+    function toggleFolderVars(checkbox, event) {
+      event.stopPropagation();
+      const folder = checkbox.closest('.folder');
+      folder.querySelectorAll('.var-check').forEach(c => c.checked = checkbox.checked);
+      folder.querySelectorAll('.folder-check').forEach(f => f.checked = checkbox.checked);
+      folder.querySelectorAll('.var-item').forEach(refreshHighlights);
+      updateExportButtonState();
+    }
+    function rgbToHex(color) {
+      const toHex = (v) => { const h = Math.round(v * 255).toString(16); return h.length === 1 ? '0' + h : h; };
+      return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`.toUpperCase();
+    }
+    function refreshHighlights(varItem) {
+      const isVarChecked = varItem.querySelector('.var-check').checked;
+      const collection = varItem.closest('.collection');
+      varItem.querySelectorAll('[class*="mode-idx-"]').forEach(el => {
+        const modeIdx = Array.from(el.classList).find(c => c.startsWith('mode-idx-')).split('-').pop();
+        const isModeChecked = collection.querySelector(`.mode-col-check[data-modeidx="${modeIdx}"]`).checked;
+        el.classList.toggle('selected', isVarChecked && isModeChecked);
+      });
+    }
+    function isNodeAllHidden(node) {
+      const varsAllHidden = !node.__vars || node.__vars.every(v => v.hidden);
+      const subFolders = Object.keys(node).filter(k => k !== '__vars');
+      return varsAllHidden && subFolders.every(k => isNodeAllHidden(node[k]));
+    }
+    function toggleChildMode(colId, modeId) {
+        const key = `${colId}|${modeId}`;
+        if (childModes.has(key)) {
+            childModes.delete(key);
+        } else {
+            childModes.add(key);
+        }
+        render(); // Re-render to update visual state
+    }
+    function setParentMode(colId, childModeId, parentModeId) {
+        parentAssignments[`${colId}|${childModeId}`] = parentModeId;
+        // No need to re-render strictly, but useful if we add visual validation later
+    }
+
+    // --- BUTTON & FILE LOGIC ---
+    document.getElementById('select-all').onclick = (e) => {
+      const tree = document.getElementById('tree');
+      const newState = !Array.from(tree.querySelectorAll('.var-check')).every(c => c.checked);
+      tree.querySelectorAll('input[type="checkbox"]:not(.mode-col-check)').forEach(c => c.checked = newState);
+      document.querySelectorAll('.var-item').forEach(refreshHighlights);
+      e.target.innerText = newState ? "Deselect All" : "Select All";
+      updateExportButtonState();
+    };
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+      
+      const exportFooter = document.getElementById('footer-export');
+      const changelogFooter = document.getElementById('footer-changelog');
+      
+      if (tabId === 'export-tab') {
+        exportFooter.style.display = 'flex';
+        changelogFooter.style.display = 'none';
+      } else {
+        exportFooter.style.display = 'none';
+        changelogFooter.style.display = 'flex';
+      }
+    }
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    fileInput.onchange = (e) => handleFile(e.target.files[0]);
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('dragover'); };
+    dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+    dropZone.ondrop = (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); };
+
+    function handleFile(file) {
+      if (!file || file.type !== "application/json") return alert("Please upload a .json file");
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        let parsedData = null;
+        try {
+          parsedData = JSON.parse(e.target.result);
+        } catch (err) { 
+          return alert("Failed to parse JSON file. It might be corrupted."); 
+        }
+
+        try {
+          lastUploadedData = parsedData;
+          lastUploadedFileName = file.name;
+          runComparison(lastUploadedData, lastUploadedFileName);
+        } catch (err) {
+          console.error(err);
+          alert("Error running comparison logic: " + err.message); 
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function runComparison(oldData, fileName) {
+      const currentVars = {}; 
+      const includeHidden = document.getElementById('changelog-include-hidden').checked;
+      const checkbox = document.getElementById('changelog-include-excluded');
+      const includeExcluded = checkbox ? checkbox.checked : false; 
+
+      const formatDisplayValue = (val) => {
+        const str = String(val);
+        if (str.startsWith('{') && str.endsWith('}')) {
+          const content = str.slice(1, -1);
+          const parts = content.split('/');
+          return parts.slice(-2).join(' / '); 
+        }
+        return str;
+      };
+
+      // --- 1. SETUP & METADATA ---
+      const modeNameTranslation = {}; 
+      const oldKnownModeIds = new Set();
+      const oldKnownModeNames = new Set(); 
+      const oldKnownCollections = new Set(); 
+      const oldExportedCollections = new Set(); 
+      const oldExportedModes = new Set(); 
+      
+      const modeRenames = []; 
+      const modeLookup = {}; 
+      const currentModeIdMap = {}; 
+
+      // ID Mapping Arrays
+      const oldIdToPath = new Map();
+      const currentIdToPath = new Map();
+      const renameMapByNewPath = new Map(); 
+      const renameMapByOldPath = new Map(); 
+
+      collectionsData.forEach(col => {
+          col.modes.forEach(m => {
+              modeLookup[`${col.name}|${m.name}`] = m.modeId;
+              currentModeIdMap[m.modeId] = m.name;
+          });
+      });
+
+      oldData.forEach(colObj => {
+          if (!colObj) return;
+          const colName = Object.keys(colObj)[0];
+          const collectionRoot = colObj[colName];
+          oldExportedCollections.add(colName); 
+
+          if (collectionRoot && collectionRoot.$knownCollections) {
+              for (const [knownColName, knownModes] of Object.entries(collectionRoot.$knownCollections)) {
+                  oldKnownCollections.add(knownColName); 
+                  for (const [id, oldName] of Object.entries(knownModes)) {
+                      oldKnownModeIds.add(id); 
+                      oldKnownModeNames.add(`${knownColName}|${oldName}`);
+                      
+                      const currentName = currentModeIdMap[id];
+                      if (currentName && currentName !== oldName) {
+                          modeNameTranslation[oldName] = currentName;
+                          modeRenames.push({ 
+                              name: `🏷️ Mode Renamed: ${oldName} ➜ ${currentName}`, 
+                              col: colName, 
+                              changes: [{ mode: '—', oldVal: 'Renamed', newVal: '—' }] 
+                          });
+                      }
+                  }
+              }
+          }
+          else if (collectionRoot && collectionRoot.$knownModeNames) {
+              for (const [id, oldName] of Object.entries(collectionRoot.$knownModeNames)) {
+                  oldKnownModeIds.add(id);
+                  oldKnownModeNames.add(`${colName}|${oldName}`);
+                  oldKnownCollections.add(colName);
+              }
+          }
+      });
+
+      // --- 2. FLATTEN CURRENT DATA ---
+      collectionsData.forEach(col => {
+        col.modes.forEach(mode => {
+          col.variables.forEach(v => {
+            if (!includeHidden && v.hidden) return; 
+            
+            // Register Current Path by ID
+            currentIdToPath.set(v.id, { col: col.name, path: v.name });
+
+            let val = v.valuesByMode[mode.modeId];
+            if (val?.type === 'VARIABLE_ALIAS') val = `{${aliasMap[val.id] || 'unknown'}}`;
+            else if (val?.r !== undefined) val = rgbToHex(val);
+            currentVars[`${col.name}|${mode.name}|${v.name}`] = val;
+          });
+        });
+      });
+
+      const oldVars = {};
+      const oldVariablePaths = new Set(); 
+
+      // --- 3. FLATTEN OLD DATA ---
+      oldData.forEach(colObj => {
+        if (!colObj) return;
+        const colName = Object.keys(colObj)[0];
+        const collectionRoot = colObj[colName];
+        
+        const processNode = (obj, path = "", contextMode = null) => {
+             if (!obj || typeof obj !== 'object') return; 
+             for (let key in obj) {
+                let currentPath = "";
+                if (path && key.indexOf('/') > -1 && key.startsWith(path + '/')) currentPath = key;
+                else currentPath = path ? `${path}/${key}` : key;
+
+                if (obj[key] && obj[key].$value !== undefined) {
+                    let modeName = contextMode || obj[key].$mode || "Unknown Mode";
+                    if (modeNameTranslation[modeName]) modeName = modeNameTranslation[modeName];
+
+                    // Register Old Path by ID
+                    if (obj[key].$id) {
+                        oldIdToPath.set(obj[key].$id, { col: colName, path: currentPath });
+                    }
+
+                    const flatKey = `${colName}|${modeName}|${currentPath}`;
+                    oldVars[flatKey] = obj[key].$value;
+                    oldExportedModes.add(`${colName}|${modeName}`);
+                    oldVariablePaths.add(`${colName}|${currentPath}`);
+
+                } else if (typeof obj[key] === 'object' && !key.startsWith('$')) {
+                    processNode(obj[key], currentPath, contextMode);
+                }
+            }
+        };
+
+        if (collectionRoot.$index) Object.keys(collectionRoot.$index).forEach(k => processNode(collectionRoot.$index[k]));
+        else if (collectionRoot.modes) Object.keys(collectionRoot.modes).forEach(k => processNode(collectionRoot.modes[k], "", k));
+      });
+
+      // --- 4. MAP RENAMES ---
+      for (const [id, currentData] of currentIdToPath.entries()) {
+          const oldData = oldIdToPath.get(id);
+          if (oldData && oldData.col === currentData.col && oldData.path !== currentData.path) {
+              const colKey = currentData.col;
+              renameMapByNewPath.set(`${colKey}|${currentData.path}`, oldData.path);
+              renameMapByOldPath.set(`${colKey}|${oldData.path}`, currentData.path);
+          }
+      }
+
+      // --- 5. CALCULATE DIFFS ---
+      const groupedChanges = {};
+
+      for (let key in currentVars) {
+        const [colName, modeName, varName] = key.split('|');
+        const newVal = currentVars[key];
+        
+        // Use mapped name if renamed
+        const renameKey = `${colName}|${varName}`;
+        const isRename = renameMapByNewPath.has(renameKey);
+        const oldVarName = isRename ? renameMapByNewPath.get(renameKey) : varName;
+
+        const oldKey = `${colName}|${modeName}|${oldVarName}`;
+        const oldVal = oldVars[oldKey];
+
+        let isChange = false;
+        let displayOldVal = oldVal;
+
+        if (oldVal !== undefined) {
+            if (String(oldVal) !== String(newVal)) isChange = true;
+        } else {
+            const modeKey = `${colName}|${modeName}`;
+            const modeId = modeLookup[modeKey];
+            const modeNameKey = `${colName}|${modeName}`;
+
+            const isCollectionExcluded = oldKnownCollections.has(colName) && !oldExportedCollections.has(colName);
+            
+            if (isCollectionExcluded) {
+                displayOldVal = '(Excluded)';
+            } 
+            else if (!oldExportedCollections.has(colName) && !oldKnownCollections.has(colName)) {
+                displayOldVal = '(New)';
+            }
+            else {
+                const isModeKnown = (modeId && oldKnownModeIds.has(modeId)) || oldKnownModeNames.has(modeNameKey);
+                const isModeExported = oldExportedModes.has(modeKey);
+
+                if (isModeKnown && !isModeExported) {
+                    displayOldVal = '(Excluded)';
+                } else {
+                    displayOldVal = '(New)';
+                }
+            }
+            isChange = true;
+        }
+
+        if (isChange || isRename) {
+          const groupKey = `${colName}|${varName}`;
+          if (!groupedChanges[groupKey]) {
+              groupedChanges[groupKey] = { name: varName, col: colName, changes: [] };
+              
+              if (isRename) {
+                  groupedChanges[groupKey].changes.push({ 
+                      mode: '🏷️ Renamed', 
+                      oldVal: oldVarName, 
+                      newVal: varName,
+                      isRenameEvent: true
+                  });
+              }
+          }
+          if (isChange) {
+              groupedChanges[groupKey].changes.push({ mode: modeName, oldVal: displayOldVal, newVal });
+          }
+        }
+      }
+
+      for (let key in oldVars) {
+          const [colName, modeName, oldVarName] = key.split('|');
+          
+          // Skip if this old path maps to a new renamed variable
+          const oldRenameKey = `${colName}|${oldVarName}`;
+          if (renameMapByOldPath.has(oldRenameKey)) continue;
+
+          if (currentVars[`${colName}|${modeName}|${oldVarName}`] === undefined) {
+              const currentModeId = modeLookup[`${colName}|${modeName}`];
+              if (currentModeId) {
+                  const groupKey = `${colName}|${oldVarName}`;
+                  if (!groupedChanges[groupKey]) groupedChanges[groupKey] = { name: oldVarName, col: colName, changes: [] };
+                  groupedChanges[groupKey].changes.push({ mode: modeName, oldVal: oldVars[key], newVal: '(Removed)' });
+              }
+          }
+      }
+
+      // --- 6. FILTER & OUTPUT ---
+      currentChanges = [];
+      const newModesDetected = new Set();
+      const removedModesDetected = new Set();
+      modeRenames.forEach(r => currentChanges.push(r));
+
+      const changesByMode = {}; 
+      Object.values(groupedChanges).forEach(group => {
+          group.changes.forEach(change => {
+              if (change.isRenameEvent) return;
+              const statsKey = `${group.col}|${change.mode}`;
+              if (!changesByMode[statsKey]) changesByMode[statsKey] = { total: 0, isNew: 0, isRemoved: 0 };
+              changesByMode[statsKey].total++;
+              if (change.oldVal === '(New)') changesByMode[statsKey].isNew++;
+              if (change.newVal === '(Removed)') changesByMode[statsKey].isRemoved++;
+          });
+      });
+
+      Object.values(groupedChanges).forEach(group => {
+          const filteredChanges = group.changes.filter(change => {
+              if (change.isRenameEvent) return true;
+              if (!includeExcluded && change.oldVal === '(Excluded)') return false;
+
+              const statsKey = `${group.col}|${change.mode}`;
+              const stats = changesByMode[statsKey];
+
+              const isEntirelyNewMode = stats && stats.isNew === stats.total 
+                                     && stats.total > 0 
+                                     && !oldExportedModes.has(statsKey)
+                                     && !oldKnownModeNames.has(statsKey); 
+              
+              if (isEntirelyNewMode) {
+                  if (!newModesDetected.has(statsKey)) {
+                      currentChanges.push({
+                          name: `✨ New Mode Added: ${change.mode}`,
+                          col: group.col,
+                          changes: [{ mode: change.mode, oldVal: '-', newVal: 'Created' }]
+                      });
+                      newModesDetected.add(statsKey);
+                  }
+                  return true; 
+              }
+
+              const isEntirelyRemovedMode = stats && stats.isRemoved === stats.total && stats.total > 0;
+              
+              if (isEntirelyRemovedMode) {
+                  if (!removedModesDetected.has(statsKey)) {
+                      currentChanges.push({
+                          name: `🗑️ Mode Removed: ${change.mode}`,
+                          col: group.col,
+                          changes: [{ mode: change.mode, oldVal: 'Existed', newVal: 'Deleted' }]
+                      });
+                      removedModesDetected.add(statsKey);
+                  }
+                  return false; 
+              }
+
+              return true;
+          });
+
+          if (filteredChanges.length > 0) {
+              currentChanges.push({ ...group, changes: filteredChanges });
+          }
+      });
+
+      // --- 7. RENDER ---
+      let tableHtml = `<table class="diff-table"><thead><tr><th class="col-check-th"><input type="checkbox" id="changelog-header-check" checked title="Select/Deselect All"></th><th style="width:30%">Variable / Event</th><th style="width:70%">Changes</th></tr></thead><tbody>`;
+      let totalChangeCount = 0;
+      
+      currentChanges.forEach(group => {
+        totalChangeCount += group.changes.length;
+        const modesHtml = group.changes.map(c => {
+            let newValClass = "val-new";
+            let oldValClass = "val-old";
+            let displayNewVal = c.isRenameEvent ? c.newVal : formatDisplayValue(c.newVal);
+            let displayOldVal = c.isRenameEvent ? c.oldVal : formatDisplayValue(c.oldVal);
+            
+            if (c.newVal === '(Removed)') newValClass = "val-removed";
+            if (c.isRenameEvent) {
+                newValClass = "val-new";
+                oldValClass = "val-removed";
+            }
+
+            return `
+              <div class="mode-change-item">
+                <span style="font-weight:600; color:#555;">${c.mode}</span>
+                <span class="val-pill ${oldValClass}" title="${c.oldVal}" style="${c.oldVal === '(Excluded)' ? 'color:#999; background:#eee;' : ''}">${displayOldVal}</span>
+                <span class="arrow-icon">➜</span>
+                <span class="val-pill ${newValClass}" title="${c.newVal}">${displayNewVal}</span>
+              </div>`;
+        }).join('');
+        
+        let nameStyle = "font-weight:600; font-size: 12px;";
+        if (group.name.includes("Mode Renamed")) nameStyle += " color: #E67E22;";
+        if (group.name.includes("New Mode")) nameStyle += " color: #1D3E73;";
+        if (group.name.includes("Mode Removed")) nameStyle += " color: #D32F2F;";
+
+        tableHtml += `<tr class="diff-row"><td class="col-check-td"><input type="checkbox" class="change-check" checked></td><td style="vertical-align: top; padding-top: 12px;"><div style="${nameStyle}">${group.name}</div><div style="color:#999; font-size:10px; margin-top:4px;">${group.col}</div></td><td><div class="mode-change-list">${modesHtml}</div></td></tr>`;
+      });
+      tableHtml += `</tbody></table>`;
+      
+      document.getElementById('diff-results').innerHTML = totalChangeCount > 0 ? `<h4>Found changes in <em>${fileName}</em></h4>` + tableHtml : `<h4>No changes detected.</h4>`;
+      const headerCheck = document.getElementById('changelog-header-check');
+      if (headerCheck) {
+        headerCheck.onchange = () => {
+          document.querySelectorAll('#diff-results .change-check').forEach(c => c.checked = headerCheck.checked);
+          updateChangelogButtonState();
+        };
+      }
+      document.querySelectorAll('#diff-results .change-check').forEach(c => {
+        c.onchange = () => updateChangelogButtonState();
+      });
+      updateChangelogButtonState();
+    }
+
+    // --- EXPORT BUTTON STATE ---
+    function updateExportButtonState() {
+      const anyChecked = Array.from(document.querySelectorAll('#tree .var-check')).some(c => c.checked);
+      const btn = document.getElementById('export-btn');
+      if (btn) btn.classList.toggle('changelog-btn-disabled', !anyChecked);
+    }
+
+    // --- CHANGELOG BUTTON STATE ---
+    function updateChangelogButtonState() {
+      const anySelected = Array.from(document.querySelectorAll('#diff-results .change-check')).some(c => c.checked);
+      const hasChanges = lastUploadedData !== null && currentChanges.length > 0 && anySelected;
+      const ids = ['export-txt-btn', 'export-csv-btn', 'export-json-btn'];
+      ids.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.toggle('changelog-btn-disabled', !hasChanges);
+      });
+    }
+
+    // --- EXPORT FUNCTIONALITY (Unchanged logic, just relies on currentChanges) ---
+    function triggerDownload(content, filename, type) {
+      const blob = new Blob([content], { type: type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+    }
+    
+    // --- 1. RESTORED JSON EXPORT LISTENER ---
+    document.getElementById('export-btn').onclick = () => {
+      const selectedIds = Array.from(document.querySelectorAll('.var-check:checked')).map(c => c.value);
+      if (selectedIds.length === 0) return alert("Select variables first.");
+      
+      const preset = document.getElementById('export-preset').value; 
+
+      const now = new Date();
+      const YYYY = now.getFullYear().toString();
+      const MM = (now.getMonth() + 1).toString().padStart(2, '0');
+      const DD = now.getDate().toString().padStart(2, '0');
+      const HH = now.getHours().toString().padStart(2, '0');
+      const MIN = now.getMinutes().toString().padStart(2, '0');
+      const SS = now.getSeconds().toString().padStart(2, '0');
+
+      const metaDate = `${YYYY}-${MM}-${DD}`; 
+      const metaTime = `${HH}:${MIN}:${SS}`; 
+      const fileDate = `${YYYY}${MM}${DD}`; 
+      const fileTime = `${HH}${MIN}${SS}`; 
+
+      const cleanFileName = currentFileName.replace(/\s*\|\s*/g, '_').replace(/\s+/g, '-');
+      const exportName = `${cleanFileName}_${fileDate}_${fileTime}`;
+
+      const metaData = {
+        fileId: exportName,
+        originalFileName: currentFileName,
+        date: metaDate, 
+        time: metaTime,
+        preset: preset 
+      };
+      
+      const jsonOutput = formatJson(selectedIds, metaData, preset);
+      
+      triggerDownload(JSON.stringify(jsonOutput, null, 2), `${exportName}.json`, 'application/json');
+    };
+
+    // --- UPDATED EXPORT LISTENERS (Fixes Paths for Values vs Renames) ---
+
+    // --- UPDATED EXPORT LISTENERS (No Jira colors in CSV) ---
+
+    document.getElementById('export-txt-btn').onclick = () => {
+      if (currentChanges.length === 0) return alert("No changes to export.");
+      
+      const now = new Date();
+      const YYYY = now.getFullYear().toString();
+      const MM = (now.getMonth() + 1).toString().padStart(2, '0');
+      const DD = now.getDate().toString().padStart(2, '0');
+      const HH = now.getHours().toString().padStart(2, '0');
+      const MIN = now.getMinutes().toString().padStart(2, '0');
+      const SS = now.getSeconds().toString().padStart(2, '0');
+      
+      const fileDate = `${YYYY}${MM}${DD}`; 
+      const fileTime = `${HH}${MIN}${SS}`; 
+      const cleanFileName = currentFileName.replace(/\s*\|\s*/g, '_').replace(/\s+/g, '-');
+      
+      const exportFilename = `changelog_${cleanFileName}_${fileDate}_${fileTime}.txt`;
+      const totalDiffs = currentChanges.reduce((acc, curr) => acc + curr.changes.length, 0);
+
+      let txtContent = `Change Log Export\n` + 
+                       `Current File: ${currentFileName}\n` +
+                       `Compared Against: ${lastUploadedFileName}\n` + 
+                       `Date: ${now.toLocaleString()}\n` + 
+                       `Tokens Updated: ${currentChanges.length}\n` + 
+                       `Total Changes: ${totalDiffs}\n\n`;
+      
+      // Cleans standard values (removes {}, hides Library/Collection name from alias path)
+      const cleanVal = (val) => {
+        const s = String(val);
+        if (s.startsWith('{') && s.endsWith('}')) {
+          const inner = s.slice(1, -1);
+          const parts = inner.split('/');
+          return parts.length > 1 ? parts.slice(1).join('/') : inner;
+        }
+        return s;
+      };
+
+      // Cleans rename paths (keeps ONLY the variable name)
+      const getShortName = (path) => {
+        const parts = String(path).split('/');
+        return parts[parts.length - 1]; 
+      };
+
+      // Strip UI Emojis completely from output file
+      const stripIcons = (str) => String(str).replace(/[✨🗑️🏷️]\s?/g, '');
+      
+      // Jira Color Macros (Kept for TXT only)
+      const formatJiraColor = (name, changes) => {
+          let hasNew = false;
+          let hasRemoved = false;
+          let hasRename = false;
+          
+          changes.forEach(c => {
+              if (c.oldVal === '(New)') hasNew = true;
+              if (c.newVal === '(Removed)') hasRemoved = true;
+              if (c.isRenameEvent) hasRename = true;
+          });
+          
+          if (hasRename) return `{color:#18A0FB}${name}{color}`; // Blue
+          if (hasRemoved && !hasNew) return `{color:#D32F2F}${name}{color}`; // Red
+          if (hasNew && !hasRemoved) return `{color:#14AE5C}${name}{color}`; // Green
+          return name; // Black
+      };
+
+      currentChanges.forEach(group => {
+        const cleanGroupName = stripIcons(group.name);
+        txtContent += `${formatJiraColor(cleanGroupName, group.changes)}\n`;
+        group.changes.forEach(c => {
+          
+          // Apply short-name logic ONLY to rename events, and value-logic to value changes
+          let printOld = c.isRenameEvent ? getShortName(c.oldVal) : cleanVal(c.oldVal);
+          let printNew = c.isRenameEvent ? getShortName(c.newVal) : cleanVal(c.newVal);
+          
+          txtContent += ` - ${stripIcons(c.mode)}: ${printOld} -> ${printNew}\n`;
+        });
+        txtContent += `\n`;
+      });
+      
+      triggerDownload(txtContent, exportFilename, 'text/plain');
+    };
+
+    document.getElementById('export-csv-btn').onclick = () => {
+      if (currentChanges.length === 0) return alert("No changes to export.");
+      
+      const now = new Date();
+      const YYYY = now.getFullYear().toString();
+      const MM = (now.getMonth() + 1).toString().padStart(2, '0');
+      const DD = now.getDate().toString().padStart(2, '0');
+      const HH = now.getHours().toString().padStart(2, '0');
+      const MIN = now.getMinutes().toString().padStart(2, '0');
+      const SS = now.getSeconds().toString().padStart(2, '0');
+      
+      const fileDate = `${YYYY}${MM}${DD}`; 
+      const fileTime = `${HH}${MIN}${SS}`; 
+      const cleanFileName = currentFileName.replace(/\s*\|\s*/g, '_').replace(/\s+/g, '-');
+      
+      const exportFilename = `changelog_${cleanFileName}_${fileDate}_${fileTime}.csv`;
+
+      let csvContent = `Current File,"${currentFileName}"\n` + 
+                       `Compared Against,"${lastUploadedFileName}"\n` + 
+                       `Date,"${now.toLocaleString()}"\n\n` +
+                       "Collection,Variable Name,Mode,Before Value,After Value\n";
+                       
+      const stripIcons = (str) => String(str).replace(/[✨🗑️🏷️]\s?/g, '');
+      
+      const cleanVal = (val) => {
+        const s = String(val);
+        if (s.startsWith('{') && s.endsWith('}')) {
+          const inner = s.slice(1, -1);
+          const parts = inner.split('/');
+          return parts.length > 1 ? parts.slice(1).join('/') : inner;
+        }
+        return s;
+      };
+
+      const getShortName = (path) => {
+        const parts = String(path).split('/');
+        return parts[parts.length - 1]; 
+      };
+                       
+      currentChanges.forEach(group => {
+        const cleanCol = `"${group.col.replace(/"/g, '""')}"`;
+        // Removed Jira coloring here, just using the clean stripped name
+        const cleanName = `"${stripIcons(group.name).replace(/"/g, '""')}"`;
+        
+        group.changes.forEach(c => {
+          const cleanMode = `"${stripIcons(c.mode).replace(/"/g, '""')}"`;
+          
+          let printOld = c.isRenameEvent ? getShortName(c.oldVal) : cleanVal(c.oldVal);
+          let printNew = c.isRenameEvent ? getShortName(c.newVal) : cleanVal(c.newVal);
+          
+          const safeOld = `"${String(printOld).replace(/"/g, '""')}"`;
+          const safeNew = `"${String(printNew).replace(/"/g, '""')}"`;
+          
+          csvContent += `${cleanCol},${cleanName},${cleanMode},${safeOld},${safeNew}\n`;
+        });
+      });
+      
+      triggerDownload(csvContent, exportFilename, 'text/csv');
+    };
+
+    // --- CHANGELOG EXPORT JSON ---
+    document.getElementById('export-json-btn').onclick = () => {
+      const selectedChanges = Array.from(document.querySelectorAll('#diff-results .change-check'))
+        .map((checkbox, idx) => ({ checkbox, group: currentChanges[idx] }))
+        .filter(({ checkbox }) => checkbox.checked)
+        .map(({ group }) => group);
+
+      if (selectedChanges.length === 0) return alert('Select at least one change to export.');
+
+      const _stripIcons = (str) => String(str).replace(/[✨🗑️🏷️]\s?/g, '');
+      const _cleanVal = (val) => {
+        const s = String(val);
+        if (s.startsWith('{') && s.endsWith('}')) {
+          const inner = s.slice(1, -1);
+          const parts = inner.split('/');
+          return parts.length > 1 ? parts.slice(1).join('/') : inner;
+        }
+        return s;
+      };
+      const _getShortName = (path) => {
+        const parts = String(path).split('/');
+        return parts[parts.length - 1];
+      };
+
+      const now = new Date();
+      const YYYY = now.getFullYear().toString();
+      const MM   = (now.getMonth() + 1).toString().padStart(2, '0');
+      const DD   = now.getDate().toString().padStart(2, '0');
+      const HH   = now.getHours().toString().padStart(2, '0');
+      const MIN  = now.getMinutes().toString().padStart(2, '0');
+      const SS   = now.getSeconds().toString().padStart(2, '0');
+      const cleanFileName = currentFileName.replace(/\s*\|\s*/g, '_').replace(/\s+/g, '-');
+      const exportFilename = `changelog_${cleanFileName}_${YYYY}${MM}${DD}_${HH}${MIN}${SS}.json`;
+
+      const output = {
+        meta: {
+          currentFile: currentFileName,
+          comparedAgainst: lastUploadedFileName,
+          exportedAt: now.toISOString(),
+          totalSelected: selectedChanges.length,
+          totalChanges: selectedChanges.reduce((acc, g) => acc + g.changes.length, 0)
+        },
+        changes: selectedChanges.map(group => ({
+          variable: _stripIcons(group.name),
+          collection: group.col,
+          changes: group.changes.map(c => ({
+            mode: _stripIcons(c.mode),
+            from: c.isRenameEvent ? _getShortName(c.oldVal) : _cleanVal(c.oldVal),
+            to:   c.isRenameEvent ? _getShortName(c.newVal) : _cleanVal(c.newVal),
+            ...(c.isRenameEvent ? { type: 'rename' } : {})
+          }))
+        }))
+      };
+
+      triggerDownload(JSON.stringify(output, null, 2), exportFilename, 'application/json');
+    };
+
+    function formatJson(selectedIds, metaData, preset = "Default") {
+      const exposeUnderlying = document.getElementById('expose-underlying-toggle').checked;
+      
+      const getExportValue = (val) => {
+        if (!val) return null;
+        if (val.type === 'VARIABLE_ALIAS') return `{${aliasMap[val.id] || 'unknown'}}`;
+        if (typeof val === 'object' && val.r !== undefined) return rgbToHex(val);
+        return val; 
+      };
+
+      const globalKnowledge = {};
+      collectionsData.forEach(c => {
+          const modes = {};
+          c.modes.forEach(m => modes[m.modeId] = m.name);
+          globalKnowledge[c.name] = modes; 
+      });
+
+      return collectionsData.map(col => {
+        const colResult = { 
+            [col.name]: { 
+                $version: metaData
+            } 
+        };
+
+        if (preset !== 'iOS2' && preset !== 'iOS3') {
+            colResult[col.name].modes = {};
+        } else if (preset === 'iOS3') {
+            colResult[col.name].$index = {}; 
+        }
+
+        let hasSelected = false;
+        
+        col.modes.forEach((mode, idx) => {
+          const headerCheck = document.querySelector(`.mode-col-check[data-colid="${col.id}"][data-modeidx="${idx}"]`);
+          if (headerCheck && !headerCheck.checked) return;
+          
+          const modeKey = `${col.id}|${mode.modeId}`;
+          const isChild = childModes.has(modeKey);
+          let parentId = null;
+          let allFamilyIds = []; 
+
+          if (isChild) {
+             parentId = parentAssignments[modeKey];
+          } else {
+             const children = Object.keys(parentAssignments).filter(k => parentAssignments[k] === mode.modeId);
+             if (children.length > 0) parentId = mode.modeId; 
+          }
+
+          if (parentId) {
+             allFamilyIds.push(parentId);
+             Object.keys(parentAssignments).forEach(k => {
+                 if (parentAssignments[k] === parentId) allFamilyIds.push(k.split('|')[1]);
+             });
+          }
+
+          // --- iOS3 DOMINANT COLORS ---
+          const dominantColors = { Fall: "", Buy: "" };
+          if (preset === 'iOS3') {
+              col.variables.forEach(v => {
+                  if (!selectedIds.includes(v.id)) return;
+                  
+                  const baseName = v.name.split('/').pop().trim();
+                  if (baseName.startsWith("On ")) return;
+
+                  const rawVal = v.valuesByMode[mode.modeId];
+                  const finalVal = getExportValue(rawVal);
+                  let colorName = "";
+                  
+                  if (finalVal && finalVal.includes('/')) {
+                      const valParts = finalVal.replace(/[{}]/g, '').split('/');
+                      colorName = valParts.length >= 2 ? valParts[valParts.length - 2] : valParts[0];
+                  }
+                  
+                  if (v.name.includes("Negative")) dominantColors.Fall = colorName;
+                  if (v.name.includes("Buy")) dominantColors.Buy = colorName;
+              });
+          }
+
+          const modeData = {};
+          
+          col.variables.forEach(v => {
+             if (selectedIds.includes(v.id)) {
+                const rawValue = v.valuesByMode[mode.modeId];
+                const finalValue = getExportValue(rawValue);
+
+                if (preset === "Default" && isChild && parentId) {
+                    const parentRaw = v.valuesByMode[parentId];
+                    if (String(finalValue) === String(getExportValue(parentRaw))) return; 
+                }
+
+                let iosIndex = null;
+                const activePreset = ["iOS", "iOS2", "iOS3"].includes(preset);
+                
+                if (activePreset && parentId && allFamilyIds.length > 0) {
+                    const parentValStr = String(getExportValue(v.valuesByMode[parentId]));
+                    const allMatch = allFamilyIds.every(id => String(getExportValue(v.valuesByMode[id])) === parentValStr);
+                    const safeModeName = mode.name.split(' ')[0]; // e.g. "Light"
+                    const safeParentName = (collectionsData.find(c=>c.id===col.id).modes.find(m=>m.modeId===parentId).name).split(' ')[0]; // e.g. "Light"
+
+                    if (allMatch) {
+                        iosIndex = `Common/${safeParentName}`;
+                    } else {
+                        let colorName = "";
+                        if (finalValue && finalValue.includes('/')) {
+                            const valParts = finalValue.replace(/[{}]/g, '').split('/');
+                            colorName = valParts.length >= 2 ? valParts[valParts.length - 2] : valParts[0];
+                        }
+                        
+                        let groupName = "";
+                        let prefix = "RiseFall";
+                        const keywords = ["Positive", "Negative", "Buy", "Sell"];
+                        const hasKeyword = keywords.some(kw => v.name.includes(kw));
+
+                        if (preset === 'iOS3') {
+                            if (v.name.includes("Positive") || v.name.includes("Negative")) {
+                                prefix = "RiseFall";
+                                groupName = "Fall";
+                                if (dominantColors.Fall) colorName = dominantColors.Fall;
+                            } else if (v.name.includes("Buy") || v.name.includes("Sell")) {
+                                prefix = "BuySell";
+                                groupName = "Buy";
+                                if (dominantColors.Buy) colorName = dominantColors.Buy;
+                            }
+                            
+                            // If it has a keyword, route it to the specific bucket
+                            if (hasKeyword) {
+                                iosIndex = `${prefix}/${groupName}${colorName}/${safeModeName}`;
+                            } else {
+                                // FIX: If it doesn't have a keyword but failed the allMatch check (like Surface),
+                                // it's just a Common variable with an override. Leave it in Common.
+                                iosIndex = `Common/${safeParentName}`; 
+                            }
+                            
+                        } else { 
+                            for (const kw of keywords) { if (v.name.includes(kw)) { groupName = kw; break; } }
+                            if (groupName) {
+                                if (preset === 'iOS2') {
+                                    if (groupName === 'Sell') { groupName = 'Buy'; colorName = 'Blue'; }
+                                    else if (groupName === 'Positive') { groupName = 'Negative'; colorName = 'Red'; }
+                                    if (groupName === 'Buy') prefix = 'BuySell';
+                                }
+                                iosIndex = `${prefix}/${groupName}${colorName}/${safeModeName}`;
+                            } else {
+                                iosIndex = `Common/${safeParentName}`; // FIX for iOS/iOS2 fallback
+                            }
+                        }
+                    }
+                    
+                    // Deduplication logic: If a child mode's value is the exact same as the parent's value,
+                    // AND it belongs in Common, skip exporting it to prevent duplicates in the JSON.
+                    if (isChild) {
+                        if (preset === 'iOS3') { 
+                            if (String(finalValue) === parentValStr && iosIndex && iosIndex.startsWith("Common/")) return; 
+                        } 
+                        else { 
+                            if (iosIndex && iosIndex.startsWith("Common/")) return; 
+                        }
+                    }
+                }
+
+                hasSelected = true;
+                let targetStorage;
+
+                if ((preset === 'iOS2' || preset === 'iOS3') && iosIndex) {
+                    const root = preset === 'iOS3' ? colResult[col.name].$index : colResult[col.name];
+                    if (!root[iosIndex]) root[iosIndex] = {};
+                    targetStorage = root[iosIndex];
+                } else {
+                    targetStorage = modeData;
+                }
+
+                const parts = v.name.split('/');
+                const varName = parts.pop().trim();
+                
+                // TRACK VARIABLE ID FOR RENAMING
+                const varObj = {
+                    "$id": v.id, 
+                    "$type": v.type.toLowerCase(),
+                    "$libraryName": currentFileName,
+                    "$collectionName": col.name,
+                    "$value": finalValue
+                };
+
+                if (exposeUnderlying && rawValue && rawValue.type === 'VARIABLE_ALIAS' && v.type === 'COLOR') {
+                    const colorObj = v.resolvedValuesByMode ? v.resolvedValuesByMode[mode.modeId] : null;
+                    if (colorObj) varObj["$underlyingValue"] = rgbToHex(colorObj);
+                }
+
+                if (preset === 'iOS3') varObj["$mode"] = mode.name;
+                if (preset !== 'iOS2' && preset !== 'iOS3' && iosIndex) varObj["$index"] = iosIndex;
+
+                let current = targetStorage;
+                if (parts.length > 0) {
+                    const rootGroup = parts[0].trim();
+                    const fullGroupPath = parts.map(p => p.trim()).join('/');
+                    if (!current[rootGroup]) current[rootGroup] = {};
+                    if (fullGroupPath === rootGroup) current[rootGroup][varName] = varObj;
+                    else {
+                        if (!current[rootGroup][fullGroupPath]) current[rootGroup][fullGroupPath] = {};
+                        current[rootGroup][fullGroupPath][varName] = varObj;
+                    }
+                } else {
+                    current[varName] = varObj;
+                }
+             }
+          });
+          
+          if (preset !== 'iOS2' && preset !== 'iOS3' && Object.keys(modeData).length > 0) {
+              colResult[col.name].modes[mode.name] = modeData;
+          }
+        });
+        
+        colResult[col.name].$knownCollections = globalKnowledge;
+
+        return hasSelected ? colResult : null;
+      }).filter(n => n !== null);
+    }
+    lucide.createIcons();
+  </script>
+</body>
+</html>
