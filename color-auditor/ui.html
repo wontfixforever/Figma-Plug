@@ -767,14 +767,28 @@ function getTokenName(boundVariableId, varMap) {
 }
 
 function findEffectiveBg(parentChain, varMap) {
+  // Walk up the parent chain looking for the nearest ancestor that has a
+  // visible, opaque fill. That fill IS the visual background for the child.
+  //   - If it's token-bound → return the token name (can check pairing rules)
+  //   - If it's hardcoded (or token unresolvable) → return null (stop here;
+  //     don't skip past it to find the next token further up the tree)
+  // If an ancestor has NO visible opaque fills it is transparent, so we
+  // continue upward — that ancestor doesn't affect the visual background.
   for (const ancestor of parentChain) {
+    let hasOpaqueFill = false;
     for (const fill of ancestor.fills) {
       if (!fill.visible || fill.opacity < 0.5) continue;
+      hasOpaqueFill = true;
       if (fill.boundVariableId) {
         const name = getTokenName(fill.boundVariableId, varMap);
         if (name && state.tokenMap[name]) return name;
       }
+      // Visible opaque fill found but it's hardcoded (or token unresolvable).
+      // Stop the search — we can't compare semantics across a broken link.
+      return null;
     }
+    // No visible opaque fills on this ancestor → transparent, keep looking up
+    void hasOpaqueFill;
   }
   return null;
 }
