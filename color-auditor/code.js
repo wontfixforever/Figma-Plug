@@ -82,121 +82,72 @@ function collectNodes(root, results) {
   visit(root);
 }
 
-// ── annotation writer ─────────────────────────────────────────────────────────
+// ── comment writer ────────────────────────────────────────────────────────────
+// Stores Comment objects for the current session so they can be removed.
+// Comments from previous sessions must be cleared manually from Figma's
+// comment panel (there is no plugin API to list/retrieve comments by ID).
+var sessionComments = [];
 
-var AUDIT_FRAME_NAME = '🔍 RATIO Color Audit';
-
-async function clearAnnotations() {
-  var existing = figma.currentPage.children.filter(function(n) { return n.name === AUDIT_FRAME_NAME; });
-  for (var i = 0; i < existing.length; i++) {
-    existing[i].remove();
+function buildCommentText(finding) {
+  var prefix = '[RATIO Audit] ';
+  if (finding.type === 'HARDCODED') {
+    var candidates = (finding.candidates || []).slice(0, 3).join(', ');
+    var extra = finding.candidates && finding.candidates.length > 3
+      ? ' (+' + (finding.candidates.length - 3) + ' more)'
+      : '';
+    return prefix + 'Hardcoded ' + finding.hex + '\nSuggested token: ' + candidates + extra;
   }
+  if (finding.type === 'DRIFT') {
+    return prefix + 'Drift: ' + finding.hex + ' \u2248 ' + finding.closestToken
+      + ' (' + finding.closestHex + ')\n\u0394E=' + finding.deltaE + ' \u00b7 ' + finding.confidence + ' confidence';
+  }
+  return prefix + 'Semantic misuse\n' + (finding.suggestion || '');
 }
 
-async function writeAnnotations(findings) {
-  await clearAnnotations();
-  if (findings.length === 0) return;
-
-  var fontsLoaded = false;
-  try {
-    await Promise.all([
-      figma.loadFontAsync({ family: 'Inter', style: 'Medium' }),
-      figma.loadFontAsync({ family: 'Inter', style: 'Regular' })
-    ]);
-    fontsLoaded = true;
-  } catch (e) {
-    figma.notify('Could not load Inter font — annotations will be label-only', { timeout: 3000 });
+function writeComments(findings) {
+  // Remove any comments left from this session
+  for (var i = 0; i < sessionComments.length; i++) {
+    try { sessionComments[i].remove(); } catch (e) {}
   }
+  sessionComments = [];
 
-  var auditGroup = figma.createFrame();
-  auditGroup.name = AUDIT_FRAME_NAME;
-  auditGroup.fills = [];
-  auditGroup.clipsContent = false;
-  auditGroup.resize(1, 1);
-
-  var COLORS = {
-    HARDCODED: { r: 0.88, g: 0.18, b: 0.18 },
-    DRIFT:     { r: 0.91, g: 0.45, b: 0.00 },
-    MISMATCH:  { r: 0.75, g: 0.55, b: 0.00 }
-  };
-
-  var TEXT_WHITE = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-  var TEXT_DIM   = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1, a: 0.8 } }];
-
-  for (var i = 0; i < findings.length; i++) {
-    var finding = findings[i];
+  var added = 0;
+  for (var j = 0; j < findings.length; j++) {
+    var finding = findings[j];
     var targetNode = figma.getNodeById(finding.nodeId);
     if (!targetNode) continue;
 
     var bounds;
-    try {
-      bounds = targetNode.absoluteBoundingBox;
-    } catch (e) {
-      continue;
-    }
+    try { bounds = targetNode.absoluteBoundingBox; } catch (e) { continue; }
     if (!bounds) continue;
 
-    var typeKey = finding.type;
-    var badgeColor = COLORS[typeKey] || COLORS.HARDCODED;
-
-    var badge = figma.createFrame();
-    badge.resize(220, fontsLoaded ? 52 : 20);
-    badge.cornerRadius = 4;
-    badge.fills = [{ type: 'SOLID', color: badgeColor }];
-
-    if (fontsLoaded) {
-      var typeLabel = figma.createText();
-      typeLabel.fontName = { family: 'Inter', style: 'Medium' };
-      typeLabel.fontSize = 10;
-      typeLabel.lineHeight = { unit: 'PIXELS', value: 14 };
-      typeLabel.fills = TEXT_WHITE;
-      typeLabel.characters = typeKey === 'HARDCODED' ? '⚑ HARDCODED'
-                           : typeKey === 'DRIFT'     ? '≈ DRIFT'
-                           : '⚠ SEMANTIC MISUSE';
-      typeLabel.x = 8;
-      typeLabel.y = 6;
-      badge.appendChild(typeLabel);
-
-      var detail = figma.createText();
-      detail.fontName = { family: 'Inter', style: 'Regular' };
-      detail.fontSize = 9;
-      detail.lineHeight = { unit: 'PIXELS', value: 13 };
-      detail.resize(204, 26);
-      detail.textAutoResize = 'HEIGHT';
-      detail.fills = TEXT_DIM;
-      detail.characters = (finding.suggestion || '').slice(0, 50);
-      detail.x = 8;
-      detail.y = 24;
-      badge.appendChild(detail);
+    var text = buildCommentText(finding);
+    try {
+      var comment = figma.createComment(text, { x: bounds.x - 20, y: bounds.y - 20 });
+      sessionComments.push(comment);
+      added++;
+    } catch (e) {
+      figma.notify('figma.createComment not available — update Figma to the latest version', { timeout: 4000 });
+      break;
     }
-
-    var suggestionText = finding.suggestion || finding.hex || '';
-    badge.name = ('[RATIO] ' + typeKey + ': ' + suggestionText).slice(0, 80);
-    badge.x = bounds.x + bounds.width + 8;
-    badge.y = bounds.y;
-    auditGroup.appendChild(badge);
   }
 
-  if (auditGroup.children.length === 0) {
-    auditGroup.remove();
-    return;
+  if (added > 0) {
+    figma.notify(added + ' comment' + (added !== 1 ? 's' : '') + ' added');
   }
+}
 
-  var children = auditGroup.children;
-  var xs      = children.map(function(c) { return c.x; });
-  var ys      = children.map(function(c) { return c.y; });
-  var rights  = children.map(function(c) { return c.x + c.width; });
-  var bottoms = children.map(function(c) { return c.y + c.height; });
-  var minX = Math.min.apply(null, xs);
-  var minY = Math.min.apply(null, ys);
-
-  auditGroup.x = minX;
-  auditGroup.y = minY;
-  auditGroup.resize(Math.max.apply(null, rights) - minX, Math.max.apply(null, bottoms) - minY);
-
-  figma.currentPage.appendChild(auditGroup);
-  var count = auditGroup.children.length;
-  figma.notify(count + ' annotation' + (count === 1 ? '' : 's') + ' added to canvas');
+function clearComments() {
+  var count = 0;
+  for (var i = 0; i < sessionComments.length; i++) {
+    try { sessionComments[i].remove(); count++; } catch (e) {}
+  }
+  sessionComments = [];
+  if (count > 0) {
+    figma.notify('Audit comments cleared');
+  } else {
+    figma.notify('No comments from this session — clear previous-run comments from the Figma comments panel', { timeout: 4000 });
+  }
 }
 
 // ── message handler ───────────────────────────────────────────────────────────
@@ -267,13 +218,12 @@ figma.ui.onmessage = async function(msg) {
     }
 
     case 'write-annotations': {
-      await writeAnnotations(msg.findings);
+      writeComments(msg.findings);
       break;
     }
 
     case 'clear-annotations': {
-      await clearAnnotations();
-      figma.notify('Audit comments cleared');
+      clearComments();
       break;
     }
 
