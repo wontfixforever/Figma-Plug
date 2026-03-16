@@ -953,7 +953,7 @@ async function loadTokenData(forceRefresh = false) {
 
     // Fetch all files in parallel
     const [semanticJson, ...primitiveJsons] = await Promise.all([
-      fetchFromGitHub(`tokens/semantic/${platform}.json`),
+      fetchFromGitHub(`tokens/semantic/ratio/color/${platform}.json`),
       ...primitiveNames.map(n => fetchFromGitHub(`tokens/primitives/ratio/color/${n}.json`))
     ]);
 
