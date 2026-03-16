@@ -64,13 +64,17 @@ function collectNodes(root, results) {
     var fills = safeFills(node);
     var strokes = safeStrokes(node);
     if (fills.length > 0 || strokes.length > 0) {
+      var bounds = null;
+      try { bounds = node.absoluteBoundingBox; } catch (e) {}
       results.push({
         nodeId: node.id,
         nodeName: node.name,
         nodeType: node.type,
         fills: fills,
         strokes: strokes,
-        parentChain: node.parent ? buildParentChain(node.parent) : []
+        parentChain: node.parent ? buildParentChain(node.parent) : [],
+        canvasX: bounds ? bounds.x : null,
+        canvasY: bounds ? bounds.y : null
       });
     }
     if ('children' in node) {
@@ -82,74 +86,6 @@ function collectNodes(root, results) {
   visit(root);
 }
 
-// ── comment writer ────────────────────────────────────────────────────────────
-// Stores Comment objects for the current session so they can be removed.
-// Comments from previous sessions must be cleared manually from Figma's
-// comment panel (there is no plugin API to list/retrieve comments by ID).
-var sessionComments = [];
-
-function buildCommentText(finding) {
-  var prefix = '[RATIO Audit] ';
-  if (finding.type === 'HARDCODED') {
-    var candidates = (finding.candidates || []).slice(0, 3).join(', ');
-    var extra = finding.candidates && finding.candidates.length > 3
-      ? ' (+' + (finding.candidates.length - 3) + ' more)'
-      : '';
-    return prefix + 'Hardcoded ' + finding.hex + '\nSuggested token: ' + candidates + extra;
-  }
-  if (finding.type === 'DRIFT') {
-    return prefix + 'Drift: ' + finding.hex + ' \u2248 ' + finding.closestToken
-      + ' (' + finding.closestHex + ')\n\u0394E=' + finding.deltaE + ' \u00b7 ' + finding.confidence + ' confidence';
-  }
-  return prefix + 'Semantic misuse\n' + (finding.suggestion || '');
-}
-
-function writeComments(findings) {
-  // Remove any comments left from this session
-  for (var i = 0; i < sessionComments.length; i++) {
-    try { sessionComments[i].remove(); } catch (e) {}
-  }
-  sessionComments = [];
-
-  var added = 0;
-  for (var j = 0; j < findings.length; j++) {
-    var finding = findings[j];
-    var targetNode = figma.getNodeById(finding.nodeId);
-    if (!targetNode) continue;
-
-    var bounds;
-    try { bounds = targetNode.absoluteBoundingBox; } catch (e) { continue; }
-    if (!bounds) continue;
-
-    var text = buildCommentText(finding);
-    try {
-      var comment = figma.createComment(text, { x: bounds.x - 20, y: bounds.y - 20 });
-      sessionComments.push(comment);
-      added++;
-    } catch (e) {
-      figma.notify('figma.createComment not available — update Figma to the latest version', { timeout: 4000 });
-      break;
-    }
-  }
-
-  if (added > 0) {
-    figma.notify(added + ' comment' + (added !== 1 ? 's' : '') + ' added');
-  }
-}
-
-function clearComments() {
-  var count = 0;
-  for (var i = 0; i < sessionComments.length; i++) {
-    try { sessionComments[i].remove(); count++; } catch (e) {}
-  }
-  sessionComments = [];
-  if (count > 0) {
-    figma.notify('Audit comments cleared');
-  } else {
-    figma.notify('No comments from this session — clear previous-run comments from the Figma comments panel', { timeout: 4000 });
-  }
-}
-
 // ── message handler ───────────────────────────────────────────────────────────
 
 figma.ui.onmessage = async function(msg) {
@@ -158,15 +94,29 @@ figma.ui.onmessage = async function(msg) {
     case 'ui-ready': {
       var patRaw = await figma.clientStorage.getAsync('gh_pat');
       var pat = (patRaw !== undefined ? patRaw : null);
+      var figmaPatRaw = await figma.clientStorage.getAsync('figma_pat');
+      var figmaPat = (figmaPatRaw !== undefined ? figmaPatRaw : null);
       var settingsRaw = await figma.clientStorage.getAsync('audit_settings');
       var settings = (settingsRaw !== undefined ? settingsRaw : {});
-      figma.ui.postMessage({ type: 'init', pat: pat, settings: settings, fileName: figma.root.name });
+      figma.ui.postMessage({
+        type: 'init',
+        pat: pat,
+        figmaPat: figmaPat,
+        settings: settings,
+        fileName: figma.root.name,
+        fileKey: figma.fileKey || null
+      });
       break;
     }
 
     case 'save-pat': {
       await figma.clientStorage.setAsync('gh_pat', msg.pat || null);
       figma.ui.postMessage({ type: 'pat-saved' });
+      break;
+    }
+
+    case 'save-figma-pat': {
+      await figma.clientStorage.setAsync('figma_pat', msg.pat || null);
       break;
     }
 
@@ -217,13 +167,19 @@ figma.ui.onmessage = async function(msg) {
       break;
     }
 
-    case 'write-annotations': {
-      writeComments(msg.findings);
+    // Store comment IDs in page plugin data so they survive session restarts
+    case 'store-comment-ids': {
+      var ids = msg.ids || [];
+      figma.currentPage.setPluginData('ratio_audit_comment_ids', JSON.stringify(ids));
       break;
     }
 
-    case 'clear-annotations': {
-      clearComments();
+    // Return stored comment IDs to the UI for deletion
+    case 'get-comment-ids': {
+      var raw = figma.currentPage.getPluginData('ratio_audit_comment_ids');
+      var ids = [];
+      try { ids = raw ? JSON.parse(raw) : []; } catch (e) {}
+      figma.ui.postMessage({ type: 'comment-ids', ids: ids });
       break;
     }
 

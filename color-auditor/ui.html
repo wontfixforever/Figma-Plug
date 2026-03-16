@@ -453,12 +453,23 @@
   </div>
   <div class="settings-body">
     <div class="settings-section">
-      <div class="settings-section-title">GitHub Authentication</div>
+      <div class="settings-section-title">GitHub — Token data</div>
       <div class="field-group">
         <div class="field-label">Personal Access Token</div>
         <input id="settings-pat" type="password" class="field-input" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+        <div class="field-hint">Fine-Grained PAT · read-only · ratio-design-system</div>
       </div>
-      <button id="btn-settings-save-pat" class="btn-secondary">Update Token</button>
+      <button id="btn-settings-save-pat" class="btn-secondary">Update GitHub Token</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Figma — Comments</div>
+      <div class="field-group">
+        <div class="field-label">Personal Access Token</div>
+        <input id="settings-figma-pat" type="password" class="field-input" placeholder="figd_..." autocomplete="off" spellcheck="false">
+        <div class="field-hint">Classic PAT from figma.com/settings — needed only when "Leave comments" is on. Scope: File content (read + write).</div>
+      </div>
+      <button id="btn-settings-save-figma-pat" class="btn-secondary">Update Figma Token</button>
     </div>
 
     <div class="settings-section">
@@ -577,7 +588,9 @@
 <script>
 // ── state ─────────────────────────────────────────────────────────────────────
 let state = {
-  pat: null,
+  pat: null,               // GitHub PAT
+  figmaPat: null,          // Figma PAT (for REST API comments)
+  fileKey: null,           // Figma file key (from figma.fileKey)
   settings: { platform: 'web', mode: 'light', driftThreshold: 5, owner: 'wontfixforever' },
   tokenMap: null,          // { tokenName: { hex, family, role } }
   pairingRules: null,      // { "On Accent": ["Accent", "Accent Hover", ...] }
@@ -872,6 +885,8 @@ function analyze(nodes, varMap) {
                 nodeId: node.nodeId,
                 nodeName: node.nodeName,
                 nodeType: node.nodeType,
+                canvasX: node.canvasX,
+                canvasY: node.canvasY,
                 tokenName,
                 effectiveBg,
                 hex: tokenData.hex,
@@ -1136,7 +1151,15 @@ function wireSettingsPanel() {
     if (pat) {
       state.pat = pat;
       parent.postMessage({ pluginMessage: { type: 'save-pat', pat } }, '*');
-      setStatus('Token updated');
+      setStatus('GitHub token updated');
+    }
+  });
+  document.getElementById('btn-settings-save-figma-pat').addEventListener('click', () => {
+    const pat = document.getElementById('settings-figma-pat').value.trim();
+    if (pat) {
+      state.figmaPat = pat;
+      parent.postMessage({ pluginMessage: { type: 'save-figma-pat', pat } }, '*');
+      setStatus('Figma token updated');
     }
   });
   document.getElementById('btn-settings-apply').addEventListener('click', () => {
@@ -1193,9 +1216,13 @@ function wireMainControls() {
     parent.postMessage({ pluginMessage: { type: 'run-audit', scope: state.scope } }, '*');
   });
 
-  // Clear comments
+  // Clear comments — ask code.js for stored IDs, then delete via REST API
   document.getElementById('btn-clear-comments').addEventListener('click', () => {
-    parent.postMessage({ pluginMessage: { type: 'clear-annotations' } }, '*');
+    if (!state.figmaPat) {
+      setStatus('No Figma PAT — add one in Settings to clear comments');
+      return;
+    }
+    parent.postMessage({ pluginMessage: { type: 'get-comment-ids' } }, '*');
   });
 
   // Export JSON
@@ -1211,6 +1238,78 @@ function wireMainControls() {
   });
 }
 
+// ── Figma REST API comment functions ─────────────────────────────────────────
+function buildCommentText(finding) {
+  const prefix = '[RATIO Audit] ';
+  if (finding.type === 'HARDCODED') {
+    const top = (finding.candidates || []).slice(0, 3).join(', ');
+    const extra = finding.candidates && finding.candidates.length > 3
+      ? ` (+${finding.candidates.length - 3} more)` : '';
+    return prefix + `Hardcoded ${finding.hex}\nSuggested: ${top}${extra}`;
+  }
+  if (finding.type === 'DRIFT') {
+    return prefix + `Drift: ${finding.hex} ≈ ${finding.closestToken} (${finding.closestHex})\nΔE=${finding.deltaE} · ${finding.confidence} confidence`;
+  }
+  return prefix + `Semantic misuse\n${finding.suggestion || ''}`;
+}
+
+async function writeComments(findings) {
+  if (!state.figmaPat) {
+    setStatus('Add a Figma PAT in Settings to leave comments');
+    return;
+  }
+  if (!state.fileKey) {
+    setStatus('File key unavailable — comments require the Figma web app (not desktop)');
+    return;
+  }
+
+  setStatus('Creating comments…');
+  const commentIds = [];
+  let added = 0, failed = 0;
+
+  for (const finding of findings) {
+    // We need the node's canvas position, which we stored on the finding
+    // findings don't carry bounds — request them via the node ID is not feasible
+    // so we use the position from the finding's context, defaulting to (0,0)
+    // NOTE: position must come from the audit-data. We attach it below.
+    const x = finding.canvasX !== undefined ? finding.canvasX - 20 : 0;
+    const y = finding.canvasY !== undefined ? finding.canvasY - 20 : 0;
+
+    try {
+      const resp = await fetch(`https://api.figma.com/v1/files/${state.fileKey}/comments`, {
+        method: 'POST',
+        headers: {
+          'X-Figma-Token': state.figmaPat,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: buildCommentText(finding),
+          client_meta: { x, y }
+        })
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.id) { commentIds.push(data.id); added++; }
+      } else {
+        failed++;
+        if (resp.status === 403) {
+          setStatus('Figma PAT rejected — check it has file write access');
+          return;
+        }
+      }
+    } catch (e) { failed++; }
+  }
+
+  // Persist IDs so they can be cleared in future sessions
+  parent.postMessage({ pluginMessage: { type: 'store-comment-ids', ids: commentIds } }, '*');
+
+  if (added > 0) {
+    setStatus(`${added} comment${added !== 1 ? 's' : ''} added${failed > 0 ? ` (${failed} failed)` : ''}`);
+  } else {
+    setStatus(`Comments failed — verify your Figma PAT in Settings`);
+  }
+}
+
 // ── Figma message handler ─────────────────────────────────────────────────────
 window.onmessage = async (event) => {
   const msg = event.data.pluginMessage;
@@ -1219,8 +1318,10 @@ window.onmessage = async (event) => {
   switch (msg.type) {
 
     case 'init': {
-      state.pat = msg.pat;
-      state.fileName = msg.fileName ?? 'Figma File';
+      state.pat      = msg.pat;
+      state.figmaPat = msg.figmaPat || null;
+      state.fileKey  = msg.fileKey  || null;
+      state.fileName = msg.fileName || 'Figma File';
       if (msg.settings && Object.keys(msg.settings).length > 0) {
         Object.assign(state.settings, msg.settings);
       }
@@ -1229,7 +1330,6 @@ window.onmessage = async (event) => {
         showScreen('screen-setup');
       } else {
         showScreen('screen-main');
-        // Kick off token load in background so first run is fast
         loadTokenData();
       }
       break;
@@ -1253,19 +1353,40 @@ window.onmessage = async (event) => {
       showResults();
       renderSummary(state.findings);
       applyFilter(state.activeFilter);
-
-      const h = state.findings.filter(f => f.type === 'HARDCODED').length;
-      const d = state.findings.filter(f => f.type === 'DRIFT').length;
-      const m = state.findings.filter(f => f.type === 'MISMATCH').length;
       setStatus(`${state.findings.length} issues found in ${nodeCount} nodes`);
 
       document.getElementById('btn-run').disabled = false;
       document.getElementById('btn-run').textContent = 'Run Audit';
 
-      // Write annotations if toggle is on
       if (document.getElementById('toggle-comments').checked && state.findings.length > 0) {
-        parent.postMessage({ pluginMessage: { type: 'write-annotations', findings: state.findings } }, '*');
+        writeComments(state.findings);
       }
+      break;
+    }
+
+    // Returned comment IDs from plugin data — delete them all
+    case 'comment-ids': {
+      if (!msg.ids || msg.ids.length === 0) {
+        setStatus('No stored audit comments to clear');
+        return;
+      }
+      if (!state.figmaPat || !state.fileKey) {
+        setStatus('Figma PAT or file key missing — cannot clear stored comments');
+        return;
+      }
+      let cleared = 0;
+      await Promise.all(msg.ids.map(async id => {
+        try {
+          await fetch(`https://api.figma.com/v1/files/${state.fileKey}/comments/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-Figma-Token': state.figmaPat }
+          });
+          cleared++;
+        } catch (e) { /* skip failed deletes */ }
+      }));
+      // Clear stored IDs
+      parent.postMessage({ pluginMessage: { type: 'store-comment-ids', ids: [] } }, '*');
+      setStatus(`Cleared ${cleared} audit comment${cleared !== 1 ? 's' : ''}`);
       break;
     }
   }
