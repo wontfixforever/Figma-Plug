@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RATIO Color Auditor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #1a1a1a;
+    --surface:   #262626;
+    --surface-hi:#333;
+    --border:    #3a3a3a;
+    --border-hi: #4a4a4a;
+    --text:      #e8e8e8;
+    --text-dim:  #909090;
+    --accent:    #0055d4;
+    --accent-hi: #3378e0;
+    --red:       #e03030;
+    --orange:    #e87000;
+    --amber:     #c49000;
+    --green:     #2a9d5c;
+    --radius:    6px;
+    --radius-sm: 4px;
+  }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    font-family: Inter, -apple-system, sans-serif;
+    font-size: 12px;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px 9px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .header-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .header-sub { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+  .header-actions { display: flex; gap: 6px; align-items: center; }
+
+  /* ── icon buttons ── */
+  .icon-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 4px 6px;
+    transition: color .15s, background .15s, border-color .15s;
+  }
+  .icon-btn:hover { color: var(--text); background: var(--surface-hi); border-color: var(--border); }
+
+  /* ── screens ── */
+  .screen { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+  .screen.hidden { display: none; }
+
+  /* ── setup screen ── */
+  #screen-setup {
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+    gap: 16px;
+  }
+  .setup-logo {
+    width: 40px; height: 40px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .setup-title { font-size: 15px; font-weight: 600; text-align: center; }
+  .setup-body  { font-size: 11px; color: var(--text-dim); text-align: center; line-height: 1.5; max-width: 280px; }
+
+  .field-group { width: 100%; display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 11px; color: var(--text-dim); font-weight: 500; }
+  .field-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+    padding: 8px 10px;
+    width: 100%;
+    transition: border-color .15s;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  .field-input::placeholder { color: var(--text-dim); }
+  .field-hint { font-size: 10px; color: var(--text-dim); line-height: 1.4; }
+  .field-hint a { color: var(--accent); text-decoration: none; }
+
+  /* ── settings overlay ── */
+  #settings-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+  #settings-overlay.hidden { display: none; }
+
+  .settings-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; }
+  .settings-section { display: flex; flex-direction: column; gap: 6px; }
+  .settings-section-title { font-size: 10px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; }
+
+  /* ── primary button ── */
+  .btn-primary {
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 14px;
+    transition: background .15s, opacity .15s;
+    width: 100%;
+  }
+  .btn-primary:hover  { background: var(--accent-hi); }
+  .btn-primary:active { opacity: .85; }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+
+  .btn-secondary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 10px;
+    transition: background .15s, border-color .15s;
+  }
+  .btn-secondary:hover { background: var(--surface-hi); border-color: var(--border-hi); }
+  .btn-danger {
+    background: none;
+    border: 1px solid #5a2020;
+    border-radius: var(--radius-sm);
+    color: #e08080;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 10px;
+    transition: background .15s, border-color .15s;
+  }
+  .btn-danger:hover { background: #2a1010; border-color: #7a3030; }
+
+  /* ── main panel controls ── */
+  .controls-area {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row-label { font-size: 11px; color: var(--text-dim); flex-shrink: 0; min-width: 56px; }
+
+  /* scope buttons */
+  .seg-group { display: flex; gap: 2px; background: var(--surface); border-radius: var(--radius-sm); padding: 2px; }
+  .seg-btn {
+    background: none;
+    border: none;
+    border-radius: 3px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 4px 10px;
+    transition: background .15s, color .15s;
+  }
+  .seg-btn.active { background: var(--surface-hi); color: var(--text); }
+
+  /* select */
+  .field-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    outline: none;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+
+  /* toggle */
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text-dim);
+    user-select: none;
+  }
+  .toggle-label input[type="checkbox"] { display: none; }
+  .toggle-track {
+    width: 28px; height: 16px;
+    background: var(--surface-hi);
+    border-radius: 8px;
+    position: relative;
+    flex-shrink: 0;
+    transition: background .2s;
+  }
+  .toggle-thumb {
+    position: absolute;
+    width: 12px; height: 12px;
+    background: var(--text-dim);
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: left .2s, background .2s;
+  }
+  .toggle-label input:checked ~ .toggle-track { background: var(--accent); }
+  .toggle-label input:checked ~ .toggle-track .toggle-thumb { left: 14px; background: #fff; }
+
+  /* ── summary bar ── */
+  .summary-bar {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .summary-chip {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid;
+  }
+  .chip-hardcoded { color: var(--red);    border-color: #5a1a1a; background: #2a1010; }
+  .chip-drift     { color: var(--orange); border-color: #5a3000; background: #2a1800; }
+  .chip-mismatch  { color: var(--amber);  border-color: #5a4000; background: #2a2000; }
+  .chip-ok        { color: var(--green);  border-color: #1a4a2a; background: #0a2015; }
+
+  /* ── filter tabs ── */
+  .filter-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    overflow-x: auto;
+  }
+  .filter-tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 8px 12px;
+    white-space: nowrap;
+    transition: color .15s, border-color .15s;
+  }
+  .filter-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .filter-tab:hover:not(.active) { color: var(--text); }
+
+  /* ── findings list ── */
+  .findings-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+  }
+  .findings-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 11px;
+    padding: 20px;
+    text-align: center;
+  }
+  .findings-empty .icon { font-size: 28px; opacity: .5; }
+
+  /* ── finding card ── */
+  .finding-card {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .1s;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .finding-card:hover { background: var(--surface); }
+  .finding-card:last-child { border-bottom: none; }
+
+  .finding-badge {
+    flex-shrink: 0;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+  .badge-hardcoded { background: #5a1a1a; color: #ff8080; }
+  .badge-drift     { background: #5a3000; color: #ffb060; }
+  .badge-mismatch  { background: #5a4000; color: #ffd060; }
+
+  .finding-content { flex: 1; min-width: 0; }
+  .finding-node {
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+  }
+  .finding-node-meta { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+  .finding-detail { font-size: 11px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
+  .finding-candidates { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .candidate-chip {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: var(--surface-hi);
+    border: 1px solid var(--border-hi);
+    color: var(--text);
+  }
+  .candidate-chip.likely {
+    background: #0d2a5a;
+    border-color: #1a4080;
+    color: #80b0ff;
+  }
+  .color-swatch {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    border: 1px solid rgba(255,255,255,.2);
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+
+  /* ── bottom actions ── */
+  .bottom-actions {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  /* ── loading state ── */
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(26,26,26,.85);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .loading-overlay.hidden { display: none; }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border-hi);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-msg { font-size: 11px; color: var(--text-dim); }
+
+  /* ── status bar ── */
+  .status-bar {
+    padding: 4px 12px;
+    font-size: 10px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    height: 22px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ── Setup Screen ──────────────────────────────────────────────────────── -->
+<div id="screen-setup" class="screen">
+  <div class="header">
+    <div>
+      <div class="header-title">RATIO Color Auditor</div>
+    </div>
+  </div>
+  <div style="flex:1; overflow-y:auto; padding: 20px 16px; display:flex; flex-direction:column; gap:14px; align-items:center;">
+    <div class="setup-logo">🎨</div>
+    <div class="setup-title">Connect to Design System</div>
+    <div class="setup-body">
+      A GitHub Personal Access Token is required to fetch color token definitions from the private <strong>ratio-design-system</strong> repository.
+    </div>
+
+    <div class="field-group" style="width:100%; max-width:320px;">
+      <div class="field-label">GitHub Personal Access Token</div>
+      <input id="setup-pat" type="password" class="field-input" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+      <div class="field-hint">
+        Create a <strong>Fine-Grained PAT</strong> with read-only access to <code>ratio-design-system</code> contents.
+      </div>
+    </div>
+
+    <div style="width:100%; max-width:320px;">
+      <button id="btn-setup-save" class="btn-primary">Connect</button>
+    </div>
+
+    <div id="setup-error" style="font-size:11px; color:#ff8080; text-align:center; display:none;"></div>
+  </div>
+</div>
+
+<!-- ── Settings Overlay ──────────────────────────────────────────────────── -->
+<div id="settings-overlay" class="hidden">
+  <div class="header">
+    <div class="header-title">Settings</div>
+    <button class="icon-btn" id="btn-settings-close">✕</button>
+  </div>
+  <div class="settings-body">
+    <div class="settings-section">
+      <div class="settings-section-title">GitHub Authentication</div>
+      <div class="field-group">
+        <div class="field-label">Personal Access Token</div>
+        <input id="settings-pat" type="password" class="field-input" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+      </div>
+      <button id="btn-settings-save-pat" class="btn-secondary">Update Token</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Audit Defaults</div>
+      <div class="field-group">
+        <div class="field-label">Platform</div>
+        <select id="settings-platform" class="field-select">
+          <option value="web">Web</option>
+          <option value="ios">iOS</option>
+          <option value="android">Android</option>
+          <option value="globaltrader">GlobalTrader</option>
+          <option value="ibkr-desktop">IBKR Desktop</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Mode</div>
+        <select id="settings-mode" class="field-select">
+          <option value="light">Light Mode</option>
+          <option value="dark">Dark Mode</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Drift Threshold (Delta E)</div>
+        <input id="settings-drift" type="number" class="field-input" value="5" min="1" max="20" step="0.5" style="width:80px;">
+        <div class="field-hint">Lower = stricter. Recommended: 3–7. Values below 1 are perceptually identical.</div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Repo Config</div>
+      <div class="field-group">
+        <div class="field-label">GitHub Owner</div>
+        <input id="settings-owner" type="text" class="field-input" value="wontfixforever" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+
+    <button id="btn-settings-apply" class="btn-primary">Save Settings</button>
+    <button id="btn-revoke-token" class="btn-danger">Revoke Token &amp; Reset</button>
+  </div>
+</div>
+
+<!-- ── Main Panel ─────────────────────────────────────────────────────────── -->
+<div id="screen-main" class="screen hidden" style="position:relative;">
+
+  <!-- Loading overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="spinner"></div>
+    <div id="loading-msg" class="loading-msg">Loading tokens…</div>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="header-title">RATIO Color Auditor</div>
+      <div id="header-sub" class="header-sub">Web · Light · —</div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="btn-refresh-tokens" title="Refresh tokens from repo">↻</button>
+      <button class="icon-btn" id="btn-settings-open" title="Settings">⚙</button>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-area">
+    <div class="row">
+      <span class="row-label">Scope</span>
+      <div class="seg-group">
+        <button class="seg-btn active" data-scope="page">Page</button>
+        <button class="seg-btn" data-scope="selection">Selection</button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="row-label">Comments</span>
+      <label class="toggle-label">
+        <input type="checkbox" id="toggle-comments" checked>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span>Leave annotations on canvas</span>
+      </label>
+    </div>
+    <button id="btn-run" class="btn-primary">Run Audit</button>
+  </div>
+
+  <!-- Results (hidden until first run) -->
+  <div id="results-area" class="hidden" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+    <!-- Summary chips -->
+    <div class="summary-bar" id="summary-bar"></div>
+
+    <!-- Filter tabs -->
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <button class="filter-tab" data-filter="HARDCODED">Hardcoded</button>
+      <button class="filter-tab" data-filter="DRIFT">Drift</button>
+      <button class="filter-tab" data-filter="MISMATCH">Misuse</button>
+    </div>
+
+    <!-- Findings -->
+    <div class="findings-list" id="findings-list"></div>
+
+    <!-- Bottom actions -->
+    <div class="bottom-actions">
+      <button id="btn-clear-comments" class="btn-secondary" style="flex:1;">Clear comments</button>
+      <button id="btn-export" class="btn-secondary" style="flex:1;">Export JSON</button>
+    </div>
+  </div>
+
+  <!-- Empty run state -->
+  <div id="idle-state" style="flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; color:var(--text-dim); font-size:11px; padding:20px; text-align:center;">
+    <div style="font-size:28px; opacity:.4;">🎨</div>
+    <div>Run an audit to inspect color usage</div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar" id="status-bar">Ready</div>
+</div>
+
+<script>
+// ── state ─────────────────────────────────────────────────────────────────────
+let state = {
+  pat: null,
+  settings: { platform: 'web', mode: 'light', driftThreshold: 5, owner: 'wontfixforever' },
+  tokenMap: null,          // { tokenName: { hex, family, role } }
+  pairingRules: null,      // { "On Accent": ["Accent", "Accent Hover", ...] }
+  inverseMap: null,        // { "#FFFFFF": ["Surface", "On Accent", ...] }
+  tokenLabsByHex: null,    // { "#FFFFFF": {L,a,b} } for drift
+  findings: [],
+  filteredFindings: [],
+  activeFilter: 'all',
+  scope: 'page',
+  fileName: ''
+};
+
+// ── Figma fallback pairing rules (used when GitHub file is unavailable) ───────
+const FALLBACK_PAIRING_RULES = {
+  "On Surface":                   ["Surface","Surface Low","Surface High","Surface Container","Surface Container Low","Surface Container Lowest","Surface Container High","Surface Container Highest"],
+  "On Surface Secondary":         ["Surface","Surface Low","Surface High","Surface Container","Surface Container Low","Surface Container Lowest","Surface Container High","Surface Container Highest"],
+  "On Surface Tertiary":          ["Surface","Surface Low","Surface High","Surface Container","Surface Container Low","Surface Container Lowest","Surface Container High","Surface Container Highest"],
+  "On Surface Inverse":           ["Surface Inverse"],
+  "On Surface Inverse Secondary": ["Surface Inverse"],
+  "On Accent":                    ["Accent","Accent Hover","Accent Pressed"],
+  "On Accent Subtle":             ["Accent Subtle","Accent Subtle Hover","Accent Subtle Pressed"],
+  "On Accent Inverse":            ["Accent Inverse"],
+  "On Accent Fixed":              ["Accent Fixed","Accent Fixed Hover","Accent Fixed Pressed"],
+  "On Accent Subtle Fixed":       ["Accent Subtle Fixed","Accent Subtle Fixed Hover","Accent Subtle Fixed Pressed"],
+  "On Accent Inverse Fixed":      ["Accent Inverse Fixed"],
+  "On Buy":                       ["Buy","Buy Hover","Buy Pressed"],
+  "On Buy Subtle":                ["Buy Subtle","Buy Subtle Hover","Buy Subtle Pressed"],
+  "On Buy Inverse":               ["Buy Inverse"],
+  "On Sell":                      ["Sell","Sell Hover","Sell Pressed"],
+  "On Sell Subtle":               ["Sell Subtle","Sell Subtle Hover","Sell Subtle Pressed"],
+  "On Sell Inverse":              ["Sell Inverse"],
+  "On Positive":                  ["Positive","Positive Hover","Positive Pressed"],
+  "On Positive Subtle":           ["Positive Subtle","Positive Subtle Hover","Positive Subtle Pressed"],
+  "On Positive Inverse":          ["Positive Inverse"],
+  "On Negative":                  ["Negative","Negative Hover","Negative Pressed"],
+  "On Negative Subtle":           ["Negative Subtle","Negative Subtle Hover","Negative Subtle Pressed"],
+  "On Negative Inverse":          ["Negative Inverse"],
+  "On Yes":                       ["Yes","Yes Hover","Yes Pressed"],
+  "On Yes Subtle":                ["Yes Subtle","Yes Subtle Hover","Yes Subtle Pressed"],
+  "On Yes Inverse":               ["Yes Inverse"],
+  "On No":                        ["No","No Hover","No Pressed"],
+  "On No Subtle":                 ["No Subtle","No Subtle Hover","No Subtle Pressed"],
+  "On No Inverse":                ["No Inverse"],
+  "On Success":                   ["Success","Success Hover","Success Pressed"],
+  "On Success Subtle":            ["Success Subtle","Success Subtle Hover","Success Subtle Pressed"],
+  "On Success Inverse":           ["Success Inverse"],
+  "On Error":                     ["Error","Error Hover","Error Pressed"],
+  "On Error Subtle":              ["Error Subtle","Error Subtle Hover","Error Subtle Pressed"],
+  "On Error Inverse":             ["Error Inverse"],
+  "On Alert":                     ["Alert","Alert Hover","Alert Pressed"],
+  "On Alert Subtle":              ["Alert Subtle","Alert Subtle Hover","Alert Subtle Pressed"],
+  "On Alert Inverse":             ["Alert Inverse"],
+  "On Warning":                   ["Warning","Warning Hover","Warning Pressed"],
+  "On Warning Subtle":            ["Warning Subtle","Warning Subtle Hover","Warning Subtle Pressed"],
+  "On Warning Inverse":           ["Warning Inverse"],
+  "On AI":                        ["AI","AI Hover","AI Pressed"],
+  "On AI Subtle":                 ["AI Subtle","AI Subtle Hover","AI Subtle Pressed"],
+  "On AI Inverse":                ["AI Inverse"]
+};
+
+// ── GitHub fetcher ────────────────────────────────────────────────────────────
+async function fetchFromGitHub(path) {
+  const { owner } = state.settings;
+  const url = `https://api.github.com/repos/${owner}/ratio-design-system/contents/${path}`;
+  const resp = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${state.pat}`,
+      'Accept': 'application/vnd.github.raw+json'
+    }
+  });
+  if (!resp.ok) {
+    if (resp.status === 401) throw new Error('GitHub token invalid or expired');
+    if (resp.status === 403) throw new Error('GitHub token lacks permission to read this repo');
+    if (resp.status === 404) return null; // file not found — return null gracefully
+    throw new Error(`GitHub API error ${resp.status}`);
+  }
+  return resp.json();
+}
+
+// ── token resolution ──────────────────────────────────────────────────────────
+function buildPrimitivesMap(primitiveJsons) {
+  // Merge all primitive files into one nested object
+  const merged = {};
+  function deepMerge(target, source) {
+    for (const [k, v] of Object.entries(source)) {
+      if (v && typeof v === 'object' && !Array.isArray(v) && !(k in target)) {
+        target[k] = {};
+      }
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        deepMerge(target[k], v);
+      } else {
+        target[k] = v;
+      }
+    }
+  }
+  for (const json of primitiveJsons) deepMerge(merged, json);
+  return merged;
+}
+
+function resolveRef(ref, primitivesMap) {
+  // "{Primitive Colors.RATIO.Blue.200}" → "#0055D4"
+  const path = ref.replace(/^\{|\}$/g, '').split('.');
+  let obj = primitivesMap;
+  for (const seg of path) {
+    if (obj == null) return null;
+    obj = obj[seg];
+  }
+  return (obj && obj['$value']) ? obj['$value'].toUpperCase() : null;
+}
+
+function buildTokenMap(semanticJson, primitivesMap, mode) {
+  const tokenMap = {}; // tokenName → { hex, family, role }
+
+  function tokenRole(name) {
+    if (name.startsWith('On '))   return 'foreground';
+    if (name.startsWith('Border')) return 'border';
+    return 'background';
+  }
+
+  function walk(obj, familyName) {
+    for (const [key, value] of Object.entries(obj)) {
+      if (key.startsWith('$')) continue;
+      if (value && value.$type === 'color') {
+        const ref = value[mode];
+        if (!ref) return;
+        const hex = resolveRef(ref, primitivesMap);
+        if (hex) {
+          tokenMap[key] = { hex, family: familyName, role: tokenRole(key) };
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        walk(value, familyName); // keep top-level family name for sub-groups
+      }
+    }
+  }
+
+  for (const [familyKey, familyValue] of Object.entries(semanticJson)) {
+    if (familyKey.startsWith('$')) continue;
+    walk(familyValue, familyKey);
+  }
+
+  return tokenMap;
+}
+
+function buildInverseMap(tokenMap) {
+  const inv = {};
+  for (const [name, data] of Object.entries(tokenMap)) {
+    if (!data.hex) continue;
+    if (!inv[data.hex]) inv[data.hex] = [];
+    inv[data.hex].push(name);
+  }
+  return inv;
+}
+
+// ── color math ────────────────────────────────────────────────────────────────
+function hexToLab(hex) {
+  const r = parseInt(hex.slice(1,3), 16) / 255;
+  const g = parseInt(hex.slice(3,5), 16) / 255;
+  const b = parseInt(hex.slice(5,7), 16) / 255;
+  const lin = c => c > 0.04045 ? Math.pow((c + 0.055) / 1.055, 2.4) : c / 12.92;
+  const rl = lin(r), gl = lin(g), bl = lin(b);
+  const x = (rl * 0.4124564 + gl * 0.3575761 + bl * 0.1804375) / 0.95047;
+  const y = (rl * 0.2126729 + gl * 0.7151522 + bl * 0.0721750) / 1.00000;
+  const z = (rl * 0.0193339 + gl * 0.1191920 + bl * 0.9503041) / 1.08883;
+  const f = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+  return { L: 116 * f(y) - 16, a: 500 * (f(x) - f(y)), b: 200 * (f(y) - f(z)) };
+}
+
+function deltaE76(lab1, lab2) {
+  return Math.sqrt((lab2.L-lab1.L)**2 + (lab2.a-lab1.a)**2 + (lab2.b-lab1.b)**2);
+}
+
+function buildTokenLabs(tokenMap) {
+  const labs = {};
+  for (const [name, data] of Object.entries(tokenMap)) {
+    if (data.hex) labs[name] = hexToLab(data.hex);
+  }
+  return labs;
+}
+
+// ── analysis ──────────────────────────────────────────────────────────────────
+function getTokenName(boundVariableId, varMap) {
+  const full = varMap[boundVariableId];
+  if (!full) return null;
+  // Try last path segment first (handles "Accent/On Accent" → "On Accent")
+  const last = full.includes('/') ? full.split('/').pop() : full;
+  return state.tokenMap[last] ? last : (state.tokenMap[full] ? full : last);
+}
+
+function findEffectiveBg(parentChain, varMap) {
+  for (const ancestor of parentChain) {
+    for (const fill of ancestor.fills) {
+      if (!fill.visible || fill.opacity < 0.5) continue;
+      if (fill.boundVariableId) {
+        const name = getTokenName(fill.boundVariableId, varMap);
+        if (name && state.tokenMap[name]) return name;
+      }
+    }
+  }
+  return null;
+}
+
+function rankCandidates(candidates, node, varMap) {
+  // Find effective background token name
+  const effectiveBg = findEffectiveBg(node.parentChain, varMap);
+  const effectiveBgFamily = effectiveBg ? state.tokenMap[effectiveBg]?.family : null;
+
+  return candidates.slice().sort((a, b) => {
+    const aData = state.tokenMap[a];
+    const bData = state.tokenMap[b];
+    let scoreA = 0, scoreB = 0;
+
+    // Prefer foreground for TEXT nodes
+    if (node.nodeType === 'TEXT') {
+      if (aData?.role === 'foreground') scoreA += 10;
+      if (bData?.role === 'foreground') scoreB += 10;
+    }
+
+    // Prefer "On X" that matches parent background family
+    if (effectiveBgFamily) {
+      if (a === `On ${effectiveBgFamily}` || a.startsWith(`On ${effectiveBgFamily} `)) scoreA += 20;
+      if (b === `On ${effectiveBgFamily}` || b.startsWith(`On ${effectiveBgFamily} `)) scoreB += 20;
+    }
+
+    // De-prioritise Fixed / Inverse variants
+    if (a.includes('Fixed') || a.includes('Inverse')) scoreA -= 5;
+    if (b.includes('Fixed') || b.includes('Inverse')) scoreB -= 5;
+
+    return scoreB - scoreA;
+  });
+}
+
+function analyze(nodes, varMap) {
+  const findings = [];
+  const { driftThreshold } = state.settings;
+  const tokenLabs = buildTokenLabs(state.tokenMap);
+
+  for (const node of nodes) {
+    const allPaints = [...node.fills, ...node.strokes.map(s => ({ ...s, _isStroke: true }))];
+
+    for (const paint of allPaints) {
+      if (!paint.visible || paint.opacity < 0.05) continue;
+
+      if (paint.boundVariableId) {
+        // ── token-bound paint: check semantic pairing ───────────────────────
+        const tokenName = getTokenName(paint.boundVariableId, varMap);
+        if (!tokenName) continue;
+
+        const tokenData = state.tokenMap[tokenName];
+        if (!tokenData) continue;
+
+        const rules = state.pairingRules;
+
+        // Flag: foreground role used on a node that probably is a background
+        if (tokenData.role === 'background' && node.nodeType === 'TEXT') {
+          findings.push({
+            type: 'MISMATCH',
+            nodeId: node.nodeId,
+            nodeName: node.nodeName,
+            nodeType: node.nodeType,
+            tokenName,
+            hex: tokenData.hex,
+            suggestion: `Background token "${tokenName}" used as text fill — did you mean "On ${tokenData.family}"?`,
+            detail: `"${tokenName}" is a background token. Text should use "On ${tokenData.family}" instead.`
+          });
+          continue;
+        }
+
+        // Flag: "On X" used on wrong background
+        if (tokenName.startsWith('On ') && rules && rules[tokenName]) {
+          const effectiveBg = findEffectiveBg(node.parentChain, varMap);
+          if (effectiveBg) {
+            const validBgs = rules[tokenName];
+            if (!validBgs.includes(effectiveBg)) {
+              const effectiveBgData = state.tokenMap[effectiveBg];
+              const isBgActuallyForeground = effectiveBgData?.role === 'foreground';
+              findings.push({
+                type: 'MISMATCH',
+                nodeId: node.nodeId,
+                nodeName: node.nodeName,
+                nodeType: node.nodeType,
+                tokenName,
+                effectiveBg,
+                hex: tokenData.hex,
+                suggestion: `"${tokenName}" on "${effectiveBg}"${isBgActuallyForeground ? ' (which is a foreground token!)' : ''}`,
+                detail: `Valid backgrounds for "${tokenName}": ${validBgs.slice(0, 3).join(', ')}${validBgs.length > 3 ? ', …' : ''}`
+              });
+            }
+          }
+        }
+
+      } else {
+        // ── hardcoded paint: check exact match → drift ──────────────────────
+        const hex = paint.hex;
+        const candidates = state.inverseMap[hex];
+
+        if (candidates && candidates.length > 0) {
+          const ranked = rankCandidates(candidates, node, varMap);
+          const likelyCandidates = ranked.slice(0, 3);
+          const others = ranked.slice(3);
+          findings.push({
+            type: 'HARDCODED',
+            nodeId: node.nodeId,
+            nodeName: node.nodeName,
+            nodeType: node.nodeType,
+            hex,
+            candidates: ranked,
+            likelyCandidates,
+            others,
+            suggestion: likelyCandidates.length === 1
+              ? `Use token: ${likelyCandidates[0]}`
+              : `Likely: ${likelyCandidates[0]}  (+${ranked.length - 1} more)`,
+            detail: `${ranked.length} matching token${ranked.length !== 1 ? 's' : ''}`
+          });
+        } else {
+          // Drift check: closest token within threshold
+          let closest = null, closestDeltaE = Infinity;
+          const hexLab = hexToLab(hex);
+          for (const [name, lab] of Object.entries(tokenLabs)) {
+            const dE = deltaE76(hexLab, lab);
+            if (dE < closestDeltaE) { closestDeltaE = dE; closest = name; }
+          }
+          if (closest && closestDeltaE <= driftThreshold) {
+            const closestHex = state.tokenMap[closest].hex;
+            const confidence = closestDeltaE < 1 ? 'HIGH' : closestDeltaE < 3 ? 'MED' : 'LOW';
+            findings.push({
+              type: 'DRIFT',
+              nodeId: node.nodeId,
+              nodeName: node.nodeName,
+              nodeType: node.nodeType,
+              hex,
+              closestToken: closest,
+              closestHex,
+              deltaE: Math.round(closestDeltaE * 10) / 10,
+              confidence,
+              suggestion: `≈ ${closest} (dE=${Math.round(closestDeltaE * 10) / 10})`,
+              detail: `Found ${hex}, closest token is ${closest} (${closestHex}), ΔE=${Math.round(closestDeltaE * 10) / 10} — ${confidence} confidence`
+            });
+          }
+          // If drift check also finds nothing, no finding (could be an intentional one-off color)
+        }
+      }
+    }
+  }
+
+  return findings;
+}
+
+// ── data loading ──────────────────────────────────────────────────────────────
+async function loadTokenData(forceRefresh = false) {
+  if (state.tokenMap && !forceRefresh) return true;
+
+  setStatus('Fetching token data from GitHub…');
+  showLoading('Fetching tokens from GitHub…');
+
+  try {
+    const { platform, mode } = state.settings;
+    const modeKey = mode === 'light' ? 'light' : 'dark';
+    const primitiveNames = ['blue', 'green', 'neutral', 'purple', 'red', 'yellow'];
+
+    // Fetch all files in parallel
+    const [semanticJson, ...primitiveJsons] = await Promise.all([
+      fetchFromGitHub(`tokens/semantic/${platform}.json`),
+      ...primitiveNames.map(n => fetchFromGitHub(`tokens/primitives/ratio/color/${n}.json`))
+    ]);
+
+    if (!semanticJson) throw new Error(`No semantic file found for platform "${platform}"`);
+
+    // Also try to fetch pairing rules (optional)
+    let pairingRules = null;
+    try {
+      pairingRules = await fetchFromGitHub('tooling/semantic-pairing-rules.json');
+    } catch { /* use fallback */ }
+    state.pairingRules = pairingRules ?? FALLBACK_PAIRING_RULES;
+
+    const primitivesMap = buildPrimitivesMap(primitiveJsons.filter(Boolean));
+    state.tokenMap = buildTokenMap(semanticJson, primitivesMap, modeKey);
+    state.inverseMap = buildInverseMap(state.tokenMap);
+
+    const tokenCount = Object.keys(state.tokenMap).length;
+    setStatus(`${tokenCount} tokens loaded · ${platform} · ${mode}`);
+    updateHeaderSub();
+    return true;
+
+  } catch (err) {
+    hideLoading();
+    if (err.message.includes('invalid') || err.message.includes('expired')) {
+      setStatus('Token error — check your PAT in Settings');
+    } else {
+      setStatus(`Error: ${err.message}`);
+    }
+    return false;
+  } finally {
+    hideLoading();
+  }
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function showLoading(msg) {
+  document.getElementById('loading-overlay').classList.remove('hidden');
+  document.getElementById('loading-msg').textContent = msg;
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.add('hidden');
+}
+function setStatus(msg) {
+  document.getElementById('status-bar').textContent = msg;
+}
+function updateHeaderSub() {
+  const { platform, mode } = state.settings;
+  const platformLabel = { web: 'Web', ios: 'iOS', android: 'Android', globaltrader: 'GlobalTrader', 'ibkr-desktop': 'IBKR Desktop' }[platform] ?? platform;
+  const modeLabel = mode === 'light' ? 'Light' : 'Dark';
+  const count = state.tokenMap ? Object.keys(state.tokenMap).length : '—';
+  document.getElementById('header-sub').textContent = `${platformLabel} · ${modeLabel} · ${count} tokens`;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('hidden');
+}
+
+// ── rendering ─────────────────────────────────────────────────────────────────
+function renderSummary(findings) {
+  const h = findings.filter(f => f.type === 'HARDCODED').length;
+  const d = findings.filter(f => f.type === 'DRIFT').length;
+  const m = findings.filter(f => f.type === 'MISMATCH').length;
+  const bar = document.getElementById('summary-bar');
+  if (h + d + m === 0) {
+    bar.innerHTML = '<span class="summary-chip chip-ok">✓ No issues found</span>';
+  } else {
+    bar.innerHTML = [
+      h ? `<span class="summary-chip chip-hardcoded">${h} hardcoded</span>` : '',
+      d ? `<span class="summary-chip chip-drift">${d} drift</span>` : '',
+      m ? `<span class="summary-chip chip-mismatch">${m} misuse</span>` : ''
+    ].join('');
+  }
+}
+
+function renderFindings(findings) {
+  const list = document.getElementById('findings-list');
+  if (findings.length === 0) {
+    list.innerHTML = `<div class="findings-empty"><div class="icon">✓</div><div>No issues for this filter</div></div>`;
+    return;
+  }
+
+  list.innerHTML = findings.map(f => {
+    const badgeClass = f.type === 'HARDCODED' ? 'badge-hardcoded' : f.type === 'DRIFT' ? 'badge-drift' : 'badge-mismatch';
+    const badgeText  = f.type === 'HARDCODED' ? 'HARDCODED' : f.type === 'DRIFT' ? 'DRIFT' : 'MISUSE';
+
+    let bodyHtml = '';
+
+    if (f.type === 'HARDCODED') {
+      const swatch = `<span class="color-swatch" style="background:${f.hex}"></span>`;
+      bodyHtml = `<div class="finding-detail">${swatch}<strong>${f.hex}</strong> — ${f.detail}</div>`;
+      if (f.likelyCandidates?.length) {
+        const chips = f.likelyCandidates.map((c, i) => {
+          const tokenHex = state.tokenMap[c]?.hex ?? '';
+          const sw = tokenHex ? `<span class="color-swatch" style="background:${tokenHex}"></span>` : '';
+          return `<span class="candidate-chip ${i === 0 ? 'likely' : ''}">${sw}${c}</span>`;
+        }).join('');
+        const moreCount = f.candidates.length - f.likelyCandidates.length;
+        bodyHtml += `<div class="finding-candidates">${chips}${moreCount > 0 ? `<span class="candidate-chip" style="color:var(--text-dim)">+${moreCount} more</span>` : ''}</div>`;
+      }
+
+    } else if (f.type === 'DRIFT') {
+      const sw1 = `<span class="color-swatch" style="background:${f.hex}"></span>`;
+      const sw2 = `<span class="color-swatch" style="background:${f.closestHex}"></span>`;
+      bodyHtml = `<div class="finding-detail">${sw1}<strong>${f.hex}</strong> → ${sw2}<strong>${f.closestToken}</strong> · ΔE=${f.deltaE} · <span style="color:${f.confidence === 'HIGH' ? 'var(--red)' : f.confidence === 'MED' ? 'var(--orange)' : 'var(--amber)'}">${f.confidence}</span></div>`;
+
+    } else {
+      bodyHtml = `<div class="finding-detail">${escapeHtml(f.suggestion)}</div>`;
+      if (f.detail) bodyHtml += `<div class="finding-node-meta" style="margin-top:3px;">${escapeHtml(f.detail)}</div>`;
+    }
+
+    return `<div class="finding-card" data-node-id="${f.nodeId}">
+      <span class="finding-badge ${badgeClass}">${badgeText}</span>
+      <div class="finding-content">
+        <div class="finding-node">${escapeHtml(f.nodeName)}</div>
+        <div class="finding-node-meta">${f.nodeType}</div>
+        ${bodyHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Click-to-focus
+  list.querySelectorAll('.finding-card').forEach(card => {
+    card.addEventListener('click', () => {
+      parent.postMessage({ pluginMessage: { type: 'focus-node', nodeId: card.dataset.nodeId } }, '*');
+    });
+  });
+}
+
+function applyFilter(filter) {
+  state.activeFilter = filter;
+  document.querySelectorAll('.filter-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.filter === filter);
+  });
+  state.filteredFindings = filter === 'all' ? state.findings : state.findings.filter(f => f.type === filter);
+  renderFindings(state.filteredFindings);
+}
+
+function escapeHtml(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showResults() {
+  const area = document.getElementById('results-area');
+  area.style.display = 'flex';
+  area.classList.remove('hidden');
+  document.getElementById('idle-state').style.display = 'none';
+}
+
+// ── event wiring ──────────────────────────────────────────────────────────────
+function wireSetupScreen() {
+  document.getElementById('btn-setup-save').addEventListener('click', async () => {
+    const pat = document.getElementById('setup-pat').value.trim();
+    if (!pat) {
+      document.getElementById('setup-error').textContent = 'Please enter a token';
+      document.getElementById('setup-error').style.display = 'block';
+      return;
+    }
+    document.getElementById('setup-error').style.display = 'none';
+    state.pat = pat;
+    parent.postMessage({ pluginMessage: { type: 'save-pat', pat } }, '*');
+  });
+}
+
+function wireSettingsPanel() {
+  document.getElementById('btn-settings-open').addEventListener('click', () => {
+    document.getElementById('settings-pat').value = '';
+    document.getElementById('settings-platform').value = state.settings.platform;
+    document.getElementById('settings-mode').value = state.settings.mode;
+    document.getElementById('settings-drift').value = state.settings.driftThreshold;
+    document.getElementById('settings-owner').value = state.settings.owner;
+    document.getElementById('settings-overlay').classList.remove('hidden');
+  });
+  document.getElementById('btn-settings-close').addEventListener('click', () => {
+    document.getElementById('settings-overlay').classList.add('hidden');
+  });
+  document.getElementById('btn-settings-save-pat').addEventListener('click', () => {
+    const pat = document.getElementById('settings-pat').value.trim();
+    if (pat) {
+      state.pat = pat;
+      parent.postMessage({ pluginMessage: { type: 'save-pat', pat } }, '*');
+      setStatus('Token updated');
+    }
+  });
+  document.getElementById('btn-settings-apply').addEventListener('click', () => {
+    state.settings.platform = document.getElementById('settings-platform').value;
+    state.settings.mode = document.getElementById('settings-mode').value;
+    state.settings.driftThreshold = parseFloat(document.getElementById('settings-drift').value) || 5;
+    state.settings.owner = document.getElementById('settings-owner').value.trim() || 'wontfixforever';
+    parent.postMessage({ pluginMessage: { type: 'save-settings', settings: state.settings } }, '*');
+    // Invalidate cached tokens so next run re-fetches for new platform/mode
+    state.tokenMap = null; state.inverseMap = null;
+    document.getElementById('settings-overlay').classList.add('hidden');
+    setStatus('Settings saved — tokens will refresh on next run');
+  });
+  document.getElementById('btn-revoke-token').addEventListener('click', () => {
+    if (!confirm('Clear your stored GitHub token and reset to setup screen?')) return;
+    state.pat = null;
+    state.tokenMap = null;
+    parent.postMessage({ pluginMessage: { type: 'save-pat', pat: null } }, '*');
+    showScreen('screen-setup');
+    document.getElementById('settings-overlay').classList.add('hidden');
+  });
+  document.getElementById('btn-refresh-tokens').addEventListener('click', async () => {
+    state.tokenMap = null;
+    await loadTokenData(true);
+  });
+}
+
+function wireMainControls() {
+  // Scope buttons
+  document.querySelectorAll('.seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.scope = btn.dataset.scope;
+    });
+  });
+
+  // Filter tabs
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => applyFilter(tab.dataset.filter));
+  });
+
+  // Run button
+  document.getElementById('btn-run').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-run');
+    btn.disabled = true;
+    btn.textContent = 'Running…';
+
+    const loaded = await loadTokenData();
+    if (!loaded) { btn.disabled = false; btn.textContent = 'Run Audit'; return; }
+
+    showLoading('Scanning nodes…');
+    setStatus('Scanning nodes…');
+    parent.postMessage({ pluginMessage: { type: 'run-audit', scope: state.scope } }, '*');
+  });
+
+  // Clear comments
+  document.getElementById('btn-clear-comments').addEventListener('click', () => {
+    parent.postMessage({ pluginMessage: { type: 'clear-annotations' } }, '*');
+  });
+
+  // Export JSON
+  document.getElementById('btn-export').addEventListener('click', () => {
+    const json = JSON.stringify(state.findings, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ratio-color-audit-${state.fileName.replace(/\s/g, '-')}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+// ── Figma message handler ─────────────────────────────────────────────────────
+window.onmessage = async (event) => {
+  const msg = event.data.pluginMessage;
+  if (!msg) return;
+
+  switch (msg.type) {
+
+    case 'init': {
+      state.pat = msg.pat;
+      state.fileName = msg.fileName ?? 'Figma File';
+      if (msg.settings && Object.keys(msg.settings).length > 0) {
+        Object.assign(state.settings, msg.settings);
+      }
+
+      if (!state.pat) {
+        showScreen('screen-setup');
+      } else {
+        showScreen('screen-main');
+        // Kick off token load in background so first run is fast
+        loadTokenData();
+      }
+      break;
+    }
+
+    case 'pat-saved': {
+      if (state.pat) {
+        showScreen('screen-main');
+        loadTokenData();
+      }
+      break;
+    }
+
+    case 'audit-data': {
+      hideLoading();
+      const { nodes, varMap, nodeCount } = msg;
+      setStatus(`Analysing ${nodeCount} nodes…`);
+
+      state.findings = analyze(nodes, varMap);
+
+      showResults();
+      renderSummary(state.findings);
+      applyFilter(state.activeFilter);
+
+      const h = state.findings.filter(f => f.type === 'HARDCODED').length;
+      const d = state.findings.filter(f => f.type === 'DRIFT').length;
+      const m = state.findings.filter(f => f.type === 'MISMATCH').length;
+      setStatus(`${state.findings.length} issues found in ${nodeCount} nodes`);
+
+      document.getElementById('btn-run').disabled = false;
+      document.getElementById('btn-run').textContent = 'Run Audit';
+
+      // Write annotations if toggle is on
+      if (document.getElementById('toggle-comments').checked && state.findings.length > 0) {
+        parent.postMessage({ pluginMessage: { type: 'write-annotations', findings: state.findings } }, '*');
+      }
+      break;
+    }
+  }
+};
+
+// ── boot ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  wireSetupScreen();
+  wireSettingsPanel();
+  wireMainControls();
+  parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
+});
+</script>
+</body>
+</html>
