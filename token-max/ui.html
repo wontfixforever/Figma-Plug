@@ -380,7 +380,8 @@
      <option value="Default">Default</option>
         <option value="iOS">iOS</option>
         <option value="iOS2">iOS2</option>
-        <option value="iOS3">iOS3</option> </select>
+        <option value="iOS3">iOS3</option>
+        <option value="iOS4">iOS4</option> </select>
 
     <button id="select-all">Select All</button>
     <button id="export-btn">Export JSON</button>
@@ -677,10 +678,11 @@
           const formatModeName = (name) => name.length <= 12 ? name : name.substring(0, 10) + '...';
 
           // Inside render(), replace the existing modeHeadersHtml map with this:
+          const singleMode = col.modes.length === 1;
           const modeHeadersHtml = col.modes.map((m, idx) => {
             const saved = savedModeStates.find(s => s.key === `${col.id}-${idx}`);
             const isChecked = saved ? saved.checked : true;
-            
+
             const modeKey = `${col.id}|${m.modeId}`;
             const isChild = childModes.has(modeKey);
             let parentDropdown = '';
@@ -688,19 +690,19 @@
             // Generate Parent Dropdown if Child is active
             if (isChild) {
                const assignedParent = parentAssignments[modeKey] || "";
-               
+
                // Create options from other modes in the same collection
                const options = col.modes
                  .filter(otherMode => otherMode.modeId !== m.modeId) // Exclude self
                  .map(otherMode => {
                     const isSelected = assignedParent === otherMode.modeId ? 'selected' : '';
                     // Truncate name for UI fit
-                    const displayName = otherMode.name.length > 8 ? otherMode.name.substring(0,7) + '..' : otherMode.name; 
+                    const displayName = otherMode.name.length > 8 ? otherMode.name.substring(0,7) + '..' : otherMode.name;
                     return `<option value="${otherMode.modeId}" ${isSelected}>${displayName}</option>`;
                  }).join('');
 
                parentDropdown = `
-                 <select class="parent-select" 
+                 <select class="parent-select"
                          onchange="setParentMode('${col.id}', '${m.modeId}', this.value); event.stopPropagation();"
                          onclick="event.stopPropagation()">
                     <option value="" disabled ${assignedParent === "" ? 'selected' : ''}>Parent</option>
@@ -714,7 +716,8 @@
                 <div class="mode-label" title="${m.name}">${formatModeName(m.name)}</div>
                 <div class="child-toggle ${isChild ? 'active' : ''}"
                      onclick="toggleChildMode('${col.id}', '${m.modeId}'); event.stopPropagation();"
-                     title="Toggle Child Mode">↳</div>
+                     title="Toggle Child Mode"
+                     ${singleMode ? 'style="visibility: hidden; pointer-events: none;"' : ''}>↳</div>
                 ${parentDropdown}
               </div>`;
           }).join('');
@@ -1494,10 +1497,10 @@
             } 
         };
 
-        if (preset !== 'iOS2' && preset !== 'iOS3') {
+        if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4') {
             colResult[col.name].modes = {};
-        } else if (preset === 'iOS3') {
-            colResult[col.name].$index = {}; 
+        } else if (preset === 'iOS3' || preset === 'iOS4') {
+            colResult[col.name].$index = {};
         }
 
         let hasSelected = false;
@@ -1527,7 +1530,7 @@
 
           // --- iOS3 DOMINANT COLORS ---
           const dominantColors = { Fall: "", Buy: "" };
-          if (preset === 'iOS3') {
+          if (preset === 'iOS3' || preset === 'iOS4') {
               col.variables.forEach(v => {
                   if (!selectedIds.includes(v.id)) return;
                   
@@ -1561,7 +1564,7 @@
                 }
 
                 let iosIndex = null;
-                const activePreset = ["iOS", "iOS2", "iOS3"].includes(preset);
+                const activePreset = ["iOS", "iOS2", "iOS3", "iOS4"].includes(preset);
                 
                 if (activePreset && parentId && allFamilyIds.length > 0) {
                     const parentValStr = String(getExportValue(v.valuesByMode[parentId]));
@@ -1583,7 +1586,7 @@
                         const keywords = ["Positive", "Negative", "Buy", "Sell"];
                         const hasKeyword = keywords.some(kw => v.name.includes(kw));
 
-                        if (preset === 'iOS3') {
+                        if (preset === 'iOS3' || preset === 'iOS4') {
                             if (v.name.includes("Positive") || v.name.includes("Negative")) {
                                 prefix = "RiseFall";
                                 groupName = "Fall";
@@ -1621,20 +1624,39 @@
                     // Deduplication logic: If a child mode's value is the exact same as the parent's value,
                     // AND it belongs in Common, skip exporting it to prevent duplicates in the JSON.
                     if (isChild) {
-                        if (preset === 'iOS3') { 
-                            if (String(finalValue) === parentValStr && iosIndex && iosIndex.startsWith("Common/")) return; 
-                        } 
-                        else { 
-                            if (iosIndex && iosIndex.startsWith("Common/")) return; 
+                        if (preset === 'iOS3' || preset === 'iOS4') {
+                            if (String(finalValue) === parentValStr && iosIndex && iosIndex.startsWith("Common/")) return;
                         }
+                        else {
+                            if (iosIndex && iosIndex.startsWith("Common/")) return;
+                        }
+                    }
+                }
+
+                // --- iOS4 FALLBACK: name-based bucketing when no parent/child configured ---
+                if (preset === 'iOS4' && !iosIndex) {
+                    const safeModeName = mode.name.split(' ')[0];
+                    let colorName = '';
+                    if (finalValue && finalValue.includes('/')) {
+                        const valParts = finalValue.replace(/[{}]/g, '').split('/');
+                        colorName = valParts.length >= 2 ? valParts[valParts.length - 2] : valParts[0];
+                    }
+                    if (v.name.includes('Negative') || v.name.includes('Sell')) {
+                        if (dominantColors.Fall) colorName = dominantColors.Fall;
+                        iosIndex = `RiseFall/Fall${colorName}/${safeModeName}`;
+                    } else if (v.name.includes('Positive') || v.name.includes('Buy')) {
+                        if (dominantColors.Buy) colorName = dominantColors.Buy;
+                        iosIndex = `BuySell/Buy${colorName}/${safeModeName}`;
+                    } else {
+                        iosIndex = `Common/${safeModeName}`;
                     }
                 }
 
                 hasSelected = true;
                 let targetStorage;
 
-                if ((preset === 'iOS2' || preset === 'iOS3') && iosIndex) {
-                    const root = preset === 'iOS3' ? colResult[col.name].$index : colResult[col.name];
+                if ((preset === 'iOS2' || preset === 'iOS3' || preset === 'iOS4') && iosIndex) {
+                    const root = (preset === 'iOS3' || preset === 'iOS4') ? colResult[col.name].$index : colResult[col.name];
                     if (!root[iosIndex]) root[iosIndex] = {};
                     targetStorage = root[iosIndex];
                 } else {
@@ -1658,8 +1680,8 @@
                     if (colorObj) varObj["$underlyingValue"] = rgbToHex(colorObj);
                 }
 
-                if (preset === 'iOS3') varObj["$mode"] = mode.name;
-                if (preset !== 'iOS2' && preset !== 'iOS3' && iosIndex) varObj["$index"] = iosIndex;
+                if (preset === 'iOS3' || preset === 'iOS4') varObj["$mode"] = mode.name;
+                if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && iosIndex) varObj["$index"] = iosIndex;
 
                 let current = targetStorage;
                 if (parts.length > 0) {
