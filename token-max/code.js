@@ -79,6 +79,26 @@ async function loadVariables() {
               const mId = collection.modes[i].modeId;
               resolvedValues[mId] = await resolveColorForMode(i);
             }
+          } else if (v.resolvedType === 'FLOAT') {
+            for (let i = 0; i < collection.modes.length; i++) {
+              const mId = collection.modes[i].modeId;
+              let currentVal = v.valuesByMode[mId];
+              if (currentVal && currentVal.type === 'VARIABLE_ALIAS') {
+                let depth = 0;
+                while (currentVal && currentVal.type === 'VARIABLE_ALIAS' && depth < 5) {
+                  try {
+                    const aliasVar = await figma.variables.getVariableByIdAsync(currentVal.id);
+                    if (aliasVar) {
+                      const aliasCol = await figma.variables.getVariableCollectionByIdAsync(aliasVar.variableCollectionId);
+                      const targetModeId = (aliasCol.modes[i] || aliasCol.modes[0]).modeId;
+                      currentVal = aliasVar.valuesByMode[targetModeId];
+                    } else { break; }
+                  } catch (e) { break; }
+                  depth++;
+                }
+                if (typeof currentVal === 'number') resolvedValues[mId] = currentVal;
+              }
+            }
           }
 
           return {

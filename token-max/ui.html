@@ -206,6 +206,7 @@
       font-size: 8px; text-transform: uppercase; letter-spacing: 0.03em;
       color: #C8D2E4; text-align: center; width: 100%; white-space: nowrap;
     }
+    .val-text.float-val { text-align: left; }
     .val-text.selected { color: #1D3E73; font-weight: 600; transition: color 0.1s ease; }
 
     /* ── Mode Column Track ── */
@@ -596,10 +597,19 @@
           const showVarHiddenLabel = v.hidden && !nodeAllHidden;
           const varLabel = showVarHiddenLabel ? ' <span style="color: #999; font-weight: 400; font-size: 9px; margin-left: 4px;">(hidden)</span>' : '';
 
-          const formatDisplayValue = (val, type) => {
+          const formatDisplayValue = (val, type, resolvedVal) => {
             if (val === undefined || val === null) return '';
-            if (val.type === 'VARIABLE_ALIAS') return `<span style="color:#1D3E73">{}</span>`;
-            if (type === 'FLOAT') { const s = String(val); return s.length > 4 ? s.substring(0, 4) + '...' : s; }
+            if (val.type === 'VARIABLE_ALIAS') {
+              if (type === 'FLOAT') {
+                const aliasPath = (aliasMap[val.id] || '').replace(/[{}]/g, '');
+                const parts = aliasPath.split('/').filter(Boolean);
+                const shortPath = parts.slice(-2).join('/');
+                const suffix = resolvedVal !== undefined && resolvedVal !== null ? ` (${resolvedVal})` : '';
+                return `<span style="color:#ADD3E2">${shortPath}${suffix}</span>`;
+              }
+              return `<span style="color:#1D3E73">{}</span>`;
+            }
+            if (type === 'FLOAT') return `<span style="color:#ADD3E2">${String(val)}</span>`;
             if (type === 'STRING') return val.length > 6 ? val.substring(0, 4) + '...' : val;
             if (type === 'BOOLEAN') return val ? 'True' : 'False';
             return '';
@@ -622,7 +632,9 @@
                 content = `<div class="color-preview mode-idx-${modeIdx}" style="background-color: ${cssColor};"></div>`;
               }
             } else {
-              content = `<span class="val-text mode-idx-${modeIdx}">${formatDisplayValue(rawValue, v.type)}</span>`;
+              const resolvedVal = v.resolvedValuesByMode ? v.resolvedValuesByMode[mode.modeId] : undefined;
+              const floatClass = v.type === 'FLOAT' ? ' float-val' : '';
+              content = `<span class="val-text${floatClass} mode-idx-${modeIdx}">${formatDisplayValue(rawValue, v.type, resolvedVal)}</span>`;
             }
             return `<div class="column-track">${content}</div>`;
           };
@@ -631,14 +643,23 @@
           for (let i = 0; i < modeCount; i++) { tracksHtml += getBox(i); }
           const previewsHtml = `<div class="preview-group">${tracksHtml}<div style="width: 55px;"></div></div>`;
           const typeLabels = { 'COLOR': 'Color', 'FLOAT': 'Number', 'STRING': 'String', 'BOOLEAN': 'Boolean' };
-          
+          const scopeLabels = {
+            'CORNER_RADIUS': 'Radius', 'WIDTH_HEIGHT': 'Size', 'GAP': 'Gap',
+            'STROKE_FLOAT': 'Stroke', 'OPACITY': 'Opacity', 'FONT_SIZE': 'Font Sz',
+            'FONT_WEIGHT': 'Weight', 'LINE_HEIGHT': 'Line Ht', 'LETTER_SPACING': 'Tracking',
+            'PARAGRAPH_SPACING': 'Para Sp', 'PARAGRAPH_INDENT': 'Indent',
+            'TEXT_CONTENT': 'Text', 'EFFECT_FLOAT': 'Effect'
+          };
+          const singleScope = v.type === 'FLOAT' && v.scopes && v.scopes.length === 1 && v.scopes[0] !== 'ALL_SCOPES';
+          const typeTag = singleScope ? (scopeLabels[v.scopes[0]] || v.scopes[0]) : (typeLabels[v.type] || v.type);
+
           html += `
             <div class="var-item ${v.hidden ? 'is-hidden' : ''}" style="${v.hidden ? 'opacity: 0.6;' : ''}"
                  onclick="if(event.target.type!=='checkbox'){const c=this.querySelector('.var-check');c.checked=!c.checked;c.dispatchEvent(new Event('change'));}">
               <input type="checkbox" class="var-check" data-colid="${colId}" value="${v.id}">
               <span class="var-name">${v.name.split('/').pop()}${varLabel}</span>
               ${previewsHtml}
-              <div class="var-type">${typeLabels[v.type] || v.type}</div>
+              <div class="var-type">${typeTag}</div>
             </div>`;
         });
         html += `</div>`;
@@ -909,30 +930,40 @@
           });
       });
 
+      // Extract $knownCollections — new format: single top-level entry at end of array.
+      // Backwards compat: old exports have it on each collection root (handled below).
+      const processKnownCollections = (knownCollsData, fallbackColName) => {
+          for (const [knownColName, knownModes] of Object.entries(knownCollsData)) {
+              oldKnownCollections.add(knownColName);
+              for (const [id, oldName] of Object.entries(knownModes)) {
+                  oldKnownModeIds.add(id);
+                  oldKnownModeNames.add(`${knownColName}|${oldName}`);
+                  const currentName = currentModeIdMap[id];
+                  if (currentName && currentName !== oldName) {
+                      modeNameTranslation[oldName] = currentName;
+                      modeRenames.push({
+                          name: `🏷️ Mode Renamed: ${oldName} ➜ ${currentName}`,
+                          col: fallbackColName || knownColName,
+                          changes: [{ mode: '—', oldVal: 'Renamed', newVal: '—' }]
+                      });
+                  }
+              }
+          }
+      };
+
+      const topLevelKnown = oldData.find(o => o && Object.keys(o)[0] === '$knownCollections');
+      if (topLevelKnown) processKnownCollections(topLevelKnown.$knownCollections, null);
+
       oldData.forEach(colObj => {
           if (!colObj) return;
           const colName = Object.keys(colObj)[0];
+          if (colName === '$knownCollections') return; // already handled above
           const collectionRoot = colObj[colName];
-          oldExportedCollections.add(colName); 
+          oldExportedCollections.add(colName);
 
-          if (collectionRoot && collectionRoot.$knownCollections) {
-              for (const [knownColName, knownModes] of Object.entries(collectionRoot.$knownCollections)) {
-                  oldKnownCollections.add(knownColName); 
-                  for (const [id, oldName] of Object.entries(knownModes)) {
-                      oldKnownModeIds.add(id); 
-                      oldKnownModeNames.add(`${knownColName}|${oldName}`);
-                      
-                      const currentName = currentModeIdMap[id];
-                      if (currentName && currentName !== oldName) {
-                          modeNameTranslation[oldName] = currentName;
-                          modeRenames.push({ 
-                              name: `🏷️ Mode Renamed: ${oldName} ➜ ${currentName}`, 
-                              col: colName, 
-                              changes: [{ mode: '—', oldVal: 'Renamed', newVal: '—' }] 
-                          });
-                      }
-                  }
-              }
+          // Backwards compat: old exports have $knownCollections on each collection root
+          if (!topLevelKnown && collectionRoot && collectionRoot.$knownCollections) {
+              processKnownCollections(collectionRoot.$knownCollections, colName);
           }
           else if (collectionRoot && collectionRoot.$knownModeNames) {
               for (const [id, oldName] of Object.entries(collectionRoot.$knownModeNames)) {
@@ -1490,7 +1521,7 @@
           globalKnowledge[c.name] = modes; 
       });
 
-      return collectionsData.map(col => {
+      const results = collectionsData.map(col => {
         const colResult = { 
             [col.name]: { 
                 $version: metaData
@@ -1680,9 +1711,14 @@
                     "$value": finalValue
                 };
 
-                if (exposeUnderlying && rawValue && rawValue.type === 'VARIABLE_ALIAS' && v.type === 'COLOR') {
-                    const colorObj = v.resolvedValuesByMode ? v.resolvedValuesByMode[mode.modeId] : null;
-                    if (colorObj) varObj["$underlyingValue"] = rgbToHex(colorObj);
+                if (exposeUnderlying && rawValue && rawValue.type === 'VARIABLE_ALIAS') {
+                    if (v.type === 'COLOR') {
+                        const colorObj = v.resolvedValuesByMode ? v.resolvedValuesByMode[mode.modeId] : null;
+                        if (colorObj) varObj["$underlyingValue"] = rgbToHex(colorObj);
+                    } else if (v.type === 'FLOAT') {
+                        const numVal = v.resolvedValuesByMode ? v.resolvedValuesByMode[mode.modeId] : null;
+                        if (numVal !== null && numVal !== undefined) varObj["$underlyingValue"] = numVal;
+                    }
                 }
 
                 if (preset === 'iOS3' || preset === 'iOS4') varObj["$mode"] = mode.name;
@@ -1709,10 +1745,11 @@
           }
         });
         
-        colResult[col.name].$knownCollections = globalKnowledge;
-
         return hasSelected ? colResult : null;
       }).filter(n => n !== null);
+
+      results.push({ $knownCollections: globalKnowledge });
+      return results;
     }
     lucide.createIcons();
   </script>
