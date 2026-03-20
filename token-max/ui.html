@@ -1635,7 +1635,7 @@
 
                 // --- iOS4 FALLBACK: name-based bucketing when no parent/child configured ---
                 if (preset === 'iOS4' && !iosIndex) {
-                    const safeModeName = mode.name.split(' ')[0];
+                    const safeModeName = mode.name;
                     let colorName = '';
                     if (finalValue && finalValue.includes('/')) {
                         const valParts = finalValue.replace(/[{}]/g, '').split('/');
