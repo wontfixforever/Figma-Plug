@@ -1637,15 +1637,19 @@
                 if (preset === 'iOS4' && !iosIndex) {
                     const safeModeName = mode.name;
                     const leafName = v.name.split('/').pop().trim();
+                    // Plain "On *" tokens (On Buy, On Negative, On Positive Inverse etc.) alias neutral
+                    // primitives and belong in Common. "On *Subtle" tokens alias colored primitives
+                    // that invert across modes and should be bucketed with their family.
+                    const isPlainOnToken = leafName.startsWith('On ') && !leafName.endsWith(' Subtle');
                     let colorName = '';
                     if (finalValue && finalValue.includes('/')) {
                         const valParts = finalValue.replace(/[{}]/g, '').split('/');
                         colorName = valParts.length >= 2 ? valParts[valParts.length - 2] : valParts[0];
                     }
-                    if (!leafName.startsWith('On ') && (v.name.includes('Negative') || v.name.includes('Sell'))) {
+                    if (!isPlainOnToken && (v.name.includes('Negative') || v.name.includes('Sell'))) {
                         if (dominantColors.Fall) colorName = dominantColors.Fall;
                         iosIndex = `RiseFall/Fall${colorName}/${safeModeName}`;
-                    } else if (!leafName.startsWith('On ') && (v.name.includes('Positive') || v.name.includes('Buy'))) {
+                    } else if (!isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Buy'))) {
                         if (dominantColors.Buy) colorName = dominantColors.Buy;
                         iosIndex = `BuySell/Buy${colorName}/${safeModeName}`;
                     } else {
