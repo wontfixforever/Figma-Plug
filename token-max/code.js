@@ -158,4 +158,13 @@ figma.ui.onmessage = async (msg) => {
       figma.ui.reposition(msg.x, msg.y);
     }
   }
+
+  if (msg.type === 'get-theme') {
+    const theme = await figma.clientStorage.getAsync('tokenmax-theme');
+    figma.ui.postMessage({ type: 'load-theme', theme: theme || 'dark' });
+  }
+
+  if (msg.type === 'set-theme') {
+    await figma.clientStorage.setAsync('tokenmax-theme', msg.theme);
+  }
 };

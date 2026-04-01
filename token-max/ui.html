@@ -2,92 +2,175 @@
 <html>
 <head>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     /*
       TokenMAX — Design System
       ─────────────────────────
-      Page bg    #F2F4F8  cool stone; elevates white surfaces
-      Surface    #FFFFFF  cards, inputs
-      Hover      #F4F7FC  row/interactive hover
-      Navy       #1D3E73  brand anchor, primary actions
-      Navy dk    #162D56  pressed states
-      Txt 1      #111827  primary — near-black, cool undertone
-      Txt 2      #4B5A72  secondary — folders, helper text
-      Txt 3      #8492A8  tertiary — labels, mode names
-      Brd sub    #E2E8F2  row separators, section lines
-      Brd med    #C8D2E4  inputs, badges, interactive borders
+      Theme-aware via CSS custom properties.
+      Dark (default) / Light toggled via body.light
     */
 
     body {
+      /* ── Dark theme (default) ── */
+      --bg-page: #000000;
+      --bg-surface: #323944;
+      --bg-surface-hover: #3a424e;
+      --bg-content: #2A2D35;
+      --text-primary: #FFFFFF;
+      --text-secondary: #C8D2E4;
+      --text-tertiary: #8492A8;
+      --border-subtle: #323944;
+      --border-medium: #3a424e;
+      --accent: #ADD3E2;
+      --accent-bg: #202128;
+      --navy: #1D3E73;
+      --navy-dark: #162D56;
+      --navy-deeper: #0F1F45;
+      --icon-btn-bg: #FFFFFF;
+      --icon-btn-border: #C8D2E4;
+      --icon-btn-hover: #F4F7FC;
+      --icon-btn-active: #EBF0FA;
+      --footer-bg: rgba(24,24,24,0.94);
+      --footer-border: #323944;
+      --select-bg: #FFFFFF;
+      --select-text: #1D3E73;
+      --btn-secondary-bg: #FFFFFF;
+      --btn-secondary-text: #1D3E73;
+      --btn-secondary-border: #C8D2E4;
+      --val-old-bg: #3B1C1C;
+      --val-old-text: #F87171;
+      --val-new-bg: #1C3B2A;
+      --val-new-text: #6EE7A0;
+      --val-removed-bg: #2A2D35;
+      --color-preview-ring: #2A2D35;
+      --parent-select-bg: #FFFFFF;
+      --parent-select-text: #4B5A72;
+      --child-toggle-hover-bg: #EEF3FB;
+      --child-toggle-hover-text: #4B5A72;
+      --child-toggle-active-bg: #EEF3FB;
+      --child-toggle-active-text: #1D3E73;
+      --drop-zone-hover: rgba(173,211,226,0.06);
+      --drop-zone-active: rgba(173,211,226,0.12);
+      --tree-line: #323944;
+
       font-family: 'Inter', -apple-system, sans-serif;
       padding: 16px;
       margin: 0;
-      background: #202128;
-      color: #111827;
+      background: var(--bg-page);
+      color: var(--text-primary);
       user-select: none;
       -webkit-font-smoothing: antialiased;
     }
 
+    /* ── Light theme ── */
+    body.light {
+      --bg-page: #F2F4F8;
+      --bg-surface: #FFFFFF;
+      --bg-surface-hover: #F4F7FC;
+      --bg-content: #F9FAFB;
+      --text-primary: #111827;
+      --text-secondary: #4B5A72;
+      --text-tertiary: #8492A8;
+      --border-subtle: #E2E8F2;
+      --border-medium: #C8D2E4;
+      --accent: #1D3E73;
+      --accent-bg: #FFFFFF;
+      --navy: #1D3E73;
+      --navy-dark: #162D56;
+      --navy-deeper: #0F1F45;
+      --icon-btn-bg: #FFFFFF;
+      --icon-btn-border: #C8D2E4;
+      --icon-btn-hover: #F4F7FC;
+      --icon-btn-active: #EBF0FA;
+      --footer-bg: rgba(242,244,248,0.94);
+      --footer-border: #E2E8F2;
+      --select-bg: #FFFFFF;
+      --select-text: #1D3E73;
+      --btn-secondary-bg: #FFFFFF;
+      --btn-secondary-text: #1D3E73;
+      --btn-secondary-border: #C8D2E4;
+      --val-old-bg: #FEE2E2;
+      --val-old-text: #DC2626;
+      --val-new-bg: #DCFCE7;
+      --val-new-text: #16A34A;
+      --val-removed-bg: #F3F4F6;
+      --color-preview-ring: #FFFFFF;
+      --parent-select-bg: #FFFFFF;
+      --parent-select-text: #4B5A72;
+      --child-toggle-hover-bg: #EEF3FB;
+      --child-toggle-hover-text: #4B5A72;
+      --child-toggle-active-bg: #EEF3FB;
+      --child-toggle-active-text: #1D3E73;
+      --drop-zone-hover: rgba(29,62,115,0.04);
+      --drop-zone-active: rgba(29,62,115,0.08);
+      --tree-line: #E2E8F2;
+    }
+
     /* ── Header ── */
     .header {
-      font-size: 13px; font-weight: 700; letter-spacing: -0.01em;
-      padding-bottom: 12px; border-bottom: 1px solid #E2E8F2;
+      font-family: 'Montserrat', sans-serif; font-size: 16px; font-weight: 900; letter-spacing: -0.01em;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border-subtle);
       margin-bottom: 0; display: flex; justify-content: space-between; align-items: center;
-      color: #fff;
+      color: var(--text-primary);
     }
 
     .tree-container { margin-bottom: 80px; width: 100%; }
 
     /* ── Tabs ── */
     .tabs-nav {
-      display: flex; gap: 0; margin-bottom: 16px;
-      border-bottom: 1px solid #323944; margin-top: 0; padding-top: 2px;
+      display: flex; gap: 0;
+      border-bottom: 1px solid #FFFFFF; margin-top: 0; padding-top: 2px; margin-bottom: 24px;
     }
     .tab-btn {
       padding: 10px 16px; cursor: pointer; border: none; background: none;
-      font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase;
-      color: rgba(255,255,255,0.7); border-bottom: 2px solid transparent; margin-bottom: -1px;
+      font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase;
+      color: #FFFFFF; border-bottom: 2px solid transparent; margin-bottom: -1px;
       transition: color 0.12s ease;
     }
-    .tab-btn:hover { color: #ADD3E2; }
-    .tab-btn.active { color: #fff; border-bottom-color: #ADD3E2; }
-    .tab-btn.active:hover { color: #ADD3E2; }
+    .tab-btn:hover { color: #CC3224; }
+    .tab-btn.active { color: #FE4731; border-bottom-color: #FE4731; }
+    .tab-btn.active:hover { color: #E53F2C; border-bottom-color: #E53F2C; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+    .section-header {
+      font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 800;
+      color: #787878; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: -0.5px;
+    }
 
     /* ── Drop Zone ── */
     #drop-zone {
-      border: 1.5px dashed #ADD3E2; border-radius: 10px; padding: 36px 24px;
-      text-align: center; color: #ADD3E2; font-size: 12px; line-height: 1.6;
+      border: 1.5px dashed var(--accent); border-radius: 10px; padding: 36px 24px;
+      text-align: center; color: var(--accent); font-size: 12px; line-height: 1.6;
       transition: background 0.15s ease, border-color 0.15s ease;
       cursor: pointer; margin-bottom: 16px;
     }
-    #drop-zone:hover { background: rgba(173,211,226,0.06); border-color: #ADD3E2; }
-    #drop-zone.dragover { background: rgba(173,211,226,0.12); border-color: #ADD3E2; color: #ADD3E2; }
+    #drop-zone:hover { background: var(--drop-zone-hover); border-color: var(--accent); }
+    #drop-zone.dragover { background: var(--drop-zone-active); border-color: var(--accent); color: var(--accent); }
 
     .snail-wrapper { display: inline-flex; align-items: flex-end; gap: 6px; margin-bottom: 10px; }
     .speech-bubble {
-      background: #ADD3E2; color: #202128; font-size: 10px; font-weight: 600;
+      background: var(--accent); color: var(--accent-bg); font-size: 10px; font-weight: 600;
       padding: 5px 10px; border-radius: 10px; white-space: nowrap; line-height: 1.4;
       position: relative; margin-bottom: 6px; letter-spacing: 0.01em;
     }
     .speech-bubble::after {
       content: ''; position: absolute; bottom: -5px; left: 12px;
       border-left: 5px solid transparent; border-right: 5px solid transparent;
-      border-top: 5px solid #ADD3E2;
+      border-top: 5px solid var(--accent);
     }
 
     /* ── Icon Button (refresh) ── */
     .icon-btn {
       width: 26px; min-width: 26px; max-width: 26px; height: 26px;
       padding: 0; display: flex; align-items: center; justify-content: center;
-      background: #FFFFFF; color: #1D3E73;
-      border: 1px solid #C8D2E4; border-radius: 6px;
+      background: transparent; color: #F84835;
+      border: 1px solid #F84835; border-radius: 2px;
       cursor: pointer; flex-grow: 0; flex-shrink: 0;
       transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
     }
-    .icon-btn:hover { background: #F4F7FC; border-color: #A8B8D0; box-shadow: 0 1px 4px rgba(17,24,39,0.08); }
-    .icon-btn:active { background: #EBF0FA; }
+    .icon-btn:hover { background: rgba(254,72,45,0.20); border-color: #FE482D; box-shadow: none; }
+    .icon-btn:active { background: rgba(254,72,45,0.18); }
     .icon-btn:disabled { opacity: 0.35; cursor: default; }
 
     @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -96,74 +179,336 @@
     /* ── Diff / Changelog Table ── */
     .diff-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 16px; margin-bottom: 80px; border-radius: 8px; overflow: hidden; }
     .diff-table th {
-      text-align: left; background: #F4F7FC; padding: 8px 10px;
-      border: 1px solid #E2E8F2; color: #4B5A72;
+      text-align: left; background: var(--bg-content); padding: 8px 10px;
+      border: 1px solid var(--border-medium); color: var(--text-primary);
       font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
     }
-    .diff-table td { padding: 8px 10px; border: 1px solid #E2E8F2; vertical-align: top; word-break: break-all; color: #1E2B3C; }
+    .diff-table td { padding: 8px 10px; border: 1px solid var(--border-medium); vertical-align: top; word-break: break-all; color: var(--text-primary); }
     .diff-table td { vertical-align: middle; }
-    .diff-row:hover { background: #F4F7FC; }
+    .diff-row:hover { background: var(--bg-content); }
     .mode-change-list { display: flex; flex-direction: column; gap: 5px; }
     .mode-change-item {
       display: grid; grid-template-columns: 100px 1fr 15px 1fr;
-      align-items: center; background: #FFFFFF;
-      padding: 5px 8px; border-radius: 5px; border: 1px solid #E2E8F2;
+      align-items: center; background: var(--bg-surface);
+      padding: 5px 8px; border-radius: 5px; border: 1px solid var(--border-medium);
     }
-    .arrow-icon { color: #8492A8; font-size: 10px; text-align: center; }
+    .arrow-icon { color: var(--text-tertiary); font-size: 10px; text-align: center; }
     .val-pill {
       font-family: 'SF Mono', 'Roboto Mono', monospace;
       font-size: 10px; padding: 2px 5px; border-radius: 3px; word-break: break-all;
     }
-    .val-old  { color: #B91C1C; background: #FEF2F2; }
-    .val-new  { color: #0F7B4A; background: #F0FDF6; }
-    .val-removed { color: #8492A8; background: #F4F7FC; text-decoration: line-through; }
+    .val-old  { color: var(--val-old-text); background: var(--val-old-bg); }
+    .val-new  { color: var(--val-new-text); background: var(--val-new-bg); }
+    .val-removed { color: var(--text-tertiary); background: var(--val-removed-bg); text-decoration: line-through; }
 
     /* ── Collections ── */
     .collection {
-      margin-bottom: 8px;
+      margin-bottom: 12px;
       border: none;
-      border-radius: 8px; overflow: hidden;
-      background: #323944;
-      box-shadow: 0 1px 2px rgba(17,24,39,0.04), 0 3px 8px rgba(17,24,39,0.04);
+      border-radius: 2px; overflow: hidden;
+      background: transparent;
+      box-shadow: none;
       transition: box-shadow 0.15s ease;
     }
     .collection:hover { box-shadow: 0 1px 3px rgba(17,24,39,0.06), 0 4px 12px rgba(17,24,39,0.06); }
-    .folder { margin-left: 20px; padding-left: 8px; }
-    /* Vertical rule lives on the content-block so the header row sits above it.
-       left: 9px = chevron center within content-block
-       (folder padding 8px + header padding 4px + half-chevron 5px = 17px from folder left;
-        content-block offset 8px → 17-8 = 9px within content-block) */
+    .folder { margin-left: 20px; padding-left: 8px; margin-top: 0px; }
     .folder > .content-block { position: relative; }
     .folder.expanded > .content-block::before {
       content: ''; position: absolute;
       left: 9px; top: 14px; bottom: 14px;
-      width: 1.5px; background: #323944;
+      width: 1px; background: rgba(252,69,58,0.80);
       pointer-events: none;
     }
-    /* Collection root-level vertical line (no collection padding → left: 17px) */
-    .collection > .content-block { position: relative; background: #2A2D35; padding-top: 2px; }
+    /* Depth 2 */ .folder .folder.expanded > .content-block::before { background: rgba(252,69,58,0.70); }
+    /* Depth 3 */ .folder .folder .folder.expanded > .content-block::before { background: rgba(252,69,58,0.60); }
+    /* Depth 4 */ .folder .folder .folder .folder.expanded > .content-block::before { background: rgba(252,69,58,0.50); }
+    /* Depth 5 */ .folder .folder .folder .folder .folder.expanded > .content-block::before { background: rgba(252,69,58,0.40); }
+    /* Depth 6 */ .folder .folder .folder .folder .folder .folder.expanded > .content-block::before { background: rgba(252,69,58,0.30); }
+
+    /* Unselected + expanded: white borders and vertical rules */
+    .collection.expanded:has(.col-check:not(:checked)) > .content-block { border-color: #FFFFFF; }
+    .collection.expanded:has(.col-check:not(:checked)) > .content-block::before { background: rgba(255,255,255,0.90); }
+    .collection.expanded:has(.col-check:not(:checked)) .folder.expanded > .content-block::before { background: rgba(255,255,255,0.80); }
+    .collection.expanded:has(.col-check:not(:checked)) .folder .folder.expanded > .content-block::before { background: rgba(255,255,255,0.70); }
+    .collection.expanded:has(.col-check:not(:checked)) .folder .folder .folder.expanded > .content-block::before { background: rgba(255,255,255,0.60); }
+    .collection.expanded:has(.col-check:not(:checked)) .folder .folder .folder .folder.expanded > .content-block::before { background: rgba(255,255,255,0.50); }
+    .collection.expanded:has(.col-check:not(:checked)) .folder .folder .folder .folder .folder.expanded > .content-block::before { background: rgba(255,255,255,0.40); }
+    .collection.expanded:has(.col-check:not(:checked)) .folder .folder .folder .folder .folder .folder.expanded > .content-block::before { background: rgba(255,255,255,0.30); }
+    .collection > .content-block { position: relative; background: transparent; padding: 2px 0 4px 0; border: 1px solid #FC453A; border-top: none; border-radius: 0 0 2px 2px; }
     .collection > .content-block::before {
       content: ''; position: absolute;
       left: 17px; top: 14px; bottom: 14px;
-      width: 1.5px; background: #323944;
+      width: 1px; background: rgba(252,69,58,0.90);
       pointer-events: none;
     }
 
     .col-header, .folder-header {
-      background: #323944; padding: 9px 12px; display: flex; align-items: center;
-      font-weight: 700; cursor: pointer; font-size: 10px;
-      color: #fff; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 9px 12px; display: flex; align-items: center;
+      font-family: 'Montserrat', sans-serif; font-weight: 900; cursor: pointer; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0;
       border-bottom: none;
     }
-    .col-header:hover { background: #3a424e; border-radius: 4px; }
-    .folder-header {
-      background: #323944; padding: 6px 12px 6px 4px; border-bottom: none;
-      color: #fff; font-weight: 700; text-transform: none; letter-spacing: 0; font-size: 11px;
-      border-radius: 4px; margin: 2px;
+    .col-header {
+      background: transparent; color: #FFFFFF; box-shadow: inset 0 0 0 1px #FFFFFF;
     }
-    .folder-header:hover { background: #3a424e; border-radius: 4px; }
+    .col-header .chevron { color: #FFFFFF; }
+    .col-header input[type="checkbox"] { border-color: #FFFFFF; }
+    .col-header input[type="checkbox"]:checked::after { border-color: #FFFFFF; }
+    .col-header .mode-label { color: #FFFFFF; font-family: 'Montserrat', sans-serif; font-weight: 600; }
+    .col-header .child-toggle { color: #FFFFFF; }
+    .collection:not(.expanded) .col-header:not(:has(.col-check:checked)):hover { background: transparent; color: #CC3224; border-radius: 2px; box-shadow: inset 0 0 0 1px #CC3224; }
+    .collection:not(.expanded) .col-header:not(:has(.col-check:checked)):hover .chevron { color: #CC3224; }
+    .collection:not(.expanded) .col-header:not(:has(.col-check:checked)):hover .mode-label { color: #CC3224; }
+    .collection:not(.expanded) .col-header:not(:has(.col-check:checked)):hover input[type="checkbox"] { border-color: #CC3224; }
+    .collection:not(.expanded) .col-header:not(:has(.col-check:checked)):hover input[type="checkbox"]:checked::after { border-color: #CC3224; }
+    .collection:not(.expanded) .col-header:not(:has(.col-check:checked)):hover .child-toggle { color: #CC3224; }
+    .collection:not(.expanded) .col-header:has(.col-check:checked):hover { background: #CC3224; }
+    .col-header:hover input[type="checkbox"] { border-color: #FFFFFF; }
+    .col-header:hover input[type="checkbox"]:checked::after { border-color: #FFFFFF; }
+    .collection.expanded .col-header:not(:has(.col-check:checked)) { background: transparent; color: #FFFFFF; box-shadow: inset 0 0 0 1px #FFFFFF; }
+    .collection.expanded .col-header:not(:has(.col-check:checked)) .chevron { color: #FFFFFF; }
+    .collection.expanded .col-header:not(:has(.col-check:checked)) .mode-label { color: #FFFFFF; }
+    .collection.expanded .col-header:not(:has(.col-check:checked)) input[type="checkbox"] { border-color: #FFFFFF; }
+    .collection.expanded .col-header:not(:has(.col-check:checked)) input[type="checkbox"]:checked::after { border-color: #FFFFFF; }
+    .collection.expanded .col-header:not(:has(.col-check:checked)) .child-toggle { color: #FFFFFF; }
+    .collection.expanded .col-header:not(:has(.col-check:checked)):hover { background: transparent; border-radius: 2px 2px 0 0; color: #FC453A; box-shadow: inset 0 0 0 1px #FC453A; }
+    .collection.expanded .col-header:not(:has(.col-check:checked)):hover .chevron { color: #FC453A; }
+    .collection.expanded .col-header:not(:has(.col-check:checked)):hover .mode-label { color: #FC453A; }
+    .collection.expanded .col-header:not(:has(.col-check:checked)):hover input[type="checkbox"] { border-color: #FC453A; }
+    .collection.expanded .col-header:not(:has(.col-check:checked)):hover input[type="checkbox"]:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23FC453A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+    .collection.expanded .col-header:not(:has(.col-check:checked)):hover .child-toggle { color: #FC453A; }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) > .content-block { border-color: #CC3224; }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) > .content-block::before { background: rgba(204,50,36,0.90); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder.expanded > .content-block::before { background: rgba(204,50,36,0.80); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder .folder.expanded > .content-block::before { background: rgba(204,50,36,0.70); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder .folder .folder.expanded > .content-block::before { background: rgba(204,50,36,0.60); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder .folder .folder .folder.expanded > .content-block::before { background: rgba(204,50,36,0.50); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder .folder .folder .folder .folder.expanded > .content-block::before { background: rgba(204,50,36,0.40); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder .folder .folder .folder .folder .folder.expanded > .content-block::before { background: rgba(204,50,36,0.30); }
+    /* On col-header hover (unselected): sub-group headers match CC3224 vertical rule depths */
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder-header { background: transparent; color: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(204,50,36,0.90); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder .folder > .folder-header { background: transparent; box-shadow: inset 0 0 0 1px rgba(204,50,36,0.80); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder .folder .folder > .folder-header { background: transparent; box-shadow: inset 0 0 0 1px rgba(204,50,36,0.70); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder .folder .folder .folder > .folder-header { background: transparent; box-shadow: inset 0 0 0 1px rgba(204,50,36,0.60); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder .folder .folder .folder .folder > .folder-header { background: transparent; box-shadow: inset 0 0 0 1px rgba(204,50,36,0.50); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder .folder .folder .folder .folder .folder > .folder-header { background: transparent; box-shadow: inset 0 0 0 1px rgba(204,50,36,0.40); }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder-header { color: #CC3224; }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder-header .chevron { color: #CC3224; }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder-check { border-color: #CC3224; }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .folder-check:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23CC3224' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+    .collection.expanded:has(.col-header:hover) .folder-header { color: #FFFFFF; }
+    .collection.expanded:has(.col-header:hover) .folder-header .chevron { color: #FFFFFF; }
+    /* Token rows cascade on unselected collection header hover */
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .var-name { color: #CC3224 !important; }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .var-check { border-color: #CC3224 !important; }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .var-check:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23CC3224' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .var-type { color: #CC3224 !important; border-color: #CC3224 !important; }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .var-item:has(.var-check:checked) .var-type { background: #CC3224 !important; color: #000000 !important; }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .val-text { color: #CC3224 !important; }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .var-item::after { background: rgba(204,50,36,0.20) !important; }
+    .collection.expanded:has(.col-check:not(:checked)):has(.col-header:hover) .color-preview.selected { box-shadow: 0 0 0 1px var(--bg-page), 0 0 0 1.5px #CC3224 !important; }
+    /* On col-header hover (selected): sub-group headers match FC453A vertical rule depths */
+    .collection.expanded:has(.col-check:checked):has(.col-header:hover) .folder-header { background: rgba(252,69,58,0.90); }
+    .collection.expanded:has(.col-check:checked):has(.col-header:hover) .folder .folder > .folder-header { background: rgba(252,69,58,0.80); }
+    .collection.expanded:has(.col-check:checked):has(.col-header:hover) .folder .folder .folder > .folder-header { background: rgba(252,69,58,0.70); }
+    .collection.expanded:has(.col-check:checked):has(.col-header:hover) .folder .folder .folder .folder > .folder-header { background: rgba(252,69,58,0.60); }
+    .collection.expanded:has(.col-check:checked):has(.col-header:hover) .folder .folder .folder .folder .folder > .folder-header { background: rgba(252,69,58,0.50); }
+    .collection.expanded:has(.col-check:checked):has(.col-header:hover) .folder .folder .folder .folder .folder .folder > .folder-header { background: rgba(252,69,58,0.40); }
+    .collection.expanded:has(.col-check:checked):has(.col-header:hover) > .content-block { border-color: #CC3224; }
+    .col-header:has(.col-check:checked) { background: #FC453A; color: #FFFFFF; box-shadow: none; }
+    /* Collection header takes selected styling when any token is checked within */
+    .collection:has(.var-check:checked) > .col-header { background: #FC453A !important; color: #FFFFFF !important; box-shadow: none !important; }
+    .collection:has(.var-check:checked) > .col-header .chevron { color: #FFFFFF !important; }
+    .collection:has(.var-check:checked) > .col-header .mode-label { color: #FFFFFF !important; }
+    .collection:has(.var-check:checked) > .col-header input[type="checkbox"] { border-color: #FFFFFF !important; }
+    .collection:has(.var-check:checked) > .col-header .child-toggle { color: #FFFFFF !important; }
+    .collection:has(.var-check:checked) > .col-header input[type="checkbox"]:checked { background: #FFFFFF !important; }
+    .collection:has(.var-check:checked) > .col-header input[type="checkbox"]:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23FC453A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+    /* Outer border also switches to red */
+    .collection.expanded:has(.var-check:checked) > .content-block { border-color: #FC453A !important; }
+    .collection.expanded .col-header:has(.col-check:checked):hover { background: #CC3224; color: #FFFFFF; border-radius: 2px 2px 0 0; }
+    .collection.expanded .col-header:has(.col-check:checked):hover .chevron { color: #FFFFFF; }
+    .collection.expanded .col-header:has(.col-check:checked):hover .mode-label { color: #FFFFFF; }
+    .collection.expanded .col-header:has(.col-check:checked):hover input[type="checkbox"] { border-color: #FFFFFF; }
+    .collection.expanded .col-header:has(.col-check:checked):hover input[type="checkbox"]:checked::after { border-color: #FFFFFF; }
+    .col-header:has(.col-check:checked) .chevron { color: #FFFFFF; }
+    .col-header:has(.col-check:checked) .mode-label { color: #FFFFFF; }
+    .col-header:has(.col-check:checked) input[type="checkbox"] { border-color: #FFFFFF; }
+    .col-header:has(.col-check:checked) input[type="checkbox"]:checked { background: #FFFFFF; }
+    .col-header:has(.col-check:checked) input[type="checkbox"]:checked::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23FC453A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E"); }
+    .folder-header {
+      background: transparent; padding: 8px 12px 6px 4px; border-bottom: none;
+      color: var(--text-primary); font-weight: 700; text-transform: none; letter-spacing: 0; font-size: 11px;
+      border-radius: 2px; margin: 4px 4px 0px 2px;
+    }
+    /* Match folder-header fill to vertical rule at each depth (selected collection) */
+    .collection:has(.col-check:checked) .folder > .folder-header { background: rgba(252,69,58,0.90); }
+    .folder .folder > .folder-header { background: rgba(252,69,58,0.80); }
+    .folder .folder .folder > .folder-header { background: rgba(252,69,58,0.70); }
+    .folder .folder .folder .folder > .folder-header { background: rgba(252,69,58,0.60); }
+    .folder .folder .folder .folder .folder > .folder-header { background: rgba(252,69,58,0.50); }
+    .folder .folder .folder .folder .folder .folder > .folder-header { background: rgba(252,69,58,0.40); }
+    /* Unselected: match white vertical rule opacities */
+    .collection.expanded:has(.col-check:not(:checked)) .folder-header { background: transparent; color: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.90); }
+    .collection.expanded:has(.col-check:not(:checked)) .folder .folder > .folder-header { background: transparent; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.80); }
+    .collection.expanded:has(.col-check:not(:checked)) .folder .folder .folder > .folder-header { background: transparent; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.70); }
+    .collection.expanded:has(.col-check:not(:checked)) .folder .folder .folder .folder > .folder-header { background: transparent; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.60); }
+    .collection.expanded:has(.col-check:not(:checked)) .folder .folder .folder .folder .folder > .folder-header { background: transparent; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.50); }
+    .collection.expanded:has(.col-check:not(:checked)) .folder .folder .folder .folder .folder .folder > .folder-header { background: transparent; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.40); }
 
-    .chevron { margin-right: 8px; font-size: 10px; transition: transform 0.18s ease; display: inline-block; width: 10px; color: #fff; }
+    /* Partially selected: checked folder within unselected collection — red styling */
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) > .folder-header {
+      background: rgba(252,69,58,0.90) !important; color: #FFFFFF !important; box-shadow: none !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder .folder-header {
+      background: rgba(252,69,58,0.80) !important; color: #FFFFFF !important; box-shadow: none !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder .folder .folder-header {
+      background: rgba(252,69,58,0.70) !important; color: #FFFFFF !important; box-shadow: none !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder .folder .folder .folder-header {
+      background: rgba(252,69,58,0.60) !important; color: #FFFFFF !important; box-shadow: none !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder .folder .folder .folder .folder-header {
+      background: rgba(252,69,58,0.50) !important; color: #FFFFFF !important; box-shadow: none !important;
+    }
+    /* Partially selected: vertical rules */
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked).expanded > .content-block::before {
+      background: rgba(252,69,58,0.90) !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder.expanded > .content-block::before {
+      background: rgba(252,69,58,0.80) !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder .folder.expanded > .content-block::before {
+      background: rgba(252,69,58,0.70) !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder .folder .folder.expanded > .content-block::before {
+      background: rgba(252,69,58,0.60) !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder .folder .folder .folder.expanded > .content-block::before {
+      background: rgba(252,69,58,0.50) !important;
+    }
+    /* Partially selected: chevrons */
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder-header .chevron { color: #FFFFFF !important; }
+    /* Partially selected: also trigger on any checked var-check descendant (not just folder-check) */
+    .collection:has(.col-check:not(:checked)) .folder:has(.var-check:checked) > .folder-header {
+      background: rgba(252,69,58,0.90) !important; color: #FFFFFF !important; box-shadow: none !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(.var-check:checked) > .folder-header .chevron { color: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder:has(.var-check:checked) > .folder-header .folder-check { border-color: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder:has(.var-check:checked) > .folder-header {
+      background: rgba(252,69,58,0.80) !important; color: #FFFFFF !important; box-shadow: none !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder .folder:has(.var-check:checked) > .folder-header .chevron { color: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder:has(.var-check:checked) > .folder-header .folder-check { border-color: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder:has(.var-check:checked) > .folder-header {
+      background: rgba(252,69,58,0.70) !important; color: #FFFFFF !important; box-shadow: none !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder:has(.var-check:checked) > .folder-header .chevron { color: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder:has(.var-check:checked) > .folder-header .folder-check { border-color: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder .folder:has(.var-check:checked) > .folder-header {
+      background: rgba(252,69,58,0.60) !important; color: #FFFFFF !important; box-shadow: none !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder .folder:has(.var-check:checked) > .folder-header .chevron { color: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder .folder:has(.var-check:checked) > .folder-header .folder-check { border-color: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder .folder .folder:has(.var-check:checked) > .folder-header {
+      background: rgba(252,69,58,0.50) !important; color: #FFFFFF !important; box-shadow: none !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder .folder .folder:has(.var-check:checked) > .folder-header .chevron { color: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder .folder .folder:has(.var-check:checked) > .folder-header .folder-check { border-color: #FFFFFF !important; }
+    /* Vertical rules for folders with checked var descendants in unselected collection */
+    .collection:has(.col-check:not(:checked)) .folder:has(.var-check:checked).expanded > .content-block::before { background: rgba(252,69,58,0.90) !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder:has(.var-check:checked).expanded > .content-block::before { background: rgba(252,69,58,0.80) !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder:has(.var-check:checked).expanded > .content-block::before { background: rgba(252,69,58,0.70) !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder .folder:has(.var-check:checked).expanded > .content-block::before { background: rgba(252,69,58,0.60) !important; }
+    .collection:has(.col-check:not(:checked)) .folder .folder .folder .folder .folder:has(.var-check:checked).expanded > .content-block::before { background: rgba(252,69,58,0.50) !important; }
+    /* Divider rules for folders with checked var descendants */
+    .collection:has(.col-check:not(:checked)) .folder:has(.var-check:checked) .var-item::after { background: rgba(252,69,58,0.20) !important; }
+    /* Token row styling for individually checked vars in unselected collection */
+    .collection:has(.col-check:not(:checked)) .folder:has(.var-check:checked) .var-check:checked { border-color: #FFFFFF !important; background: transparent !important; }
+    .collection:has(.col-check:not(:checked)) .folder:has(.var-check:checked) .var-check:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+    /* Partially selected: divider rules */
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .var-item::after { background: rgba(252,69,58,0.20) !important; }
+    /* Partially selected: checkboxes — white fill, FC453A checkmark */
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder-check { border-color: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder-check:checked { background: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .folder-check:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23FC453A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .var-check { border-color: #FFFFFF !important; background: transparent !important; }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .var-check:checked { background: transparent !important; }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .var-check:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+    /* Partially selected: token row styling to match fully selected collection */
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .var-type {
+      color: #FC453A !important; border-color: #FC453A !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .var-item:has(.var-check:checked) .var-type {
+      background: #FC453A !important; color: #000000 !important; border-color: #FC453A !important;
+    }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .val-text { color: #FC453A !important; }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .var-name { color: #FFFFFF !important; }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .var-item:hover { background: rgba(252,69,58,0.20) !important; }
+    .collection:has(.col-check:not(:checked)) .folder:has(> .folder-header .folder-check:checked) .color-preview.selected {
+      box-shadow: 0 0 0 1px var(--bg-page), 0 0 0 1.5px #FC453A !important;
+    }
+    .folder-header:has(.folder-check:not(:checked)):hover { background: transparent !important; border-radius: 2px; color: rgba(252,69,58,0.90) !important; box-shadow: inset 0 0 0 1px rgba(252,69,58,0.90) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover .chevron { color: rgba(252,69,58,0.90) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover .folder-check { border-color: rgba(252,69,58,0.90) !important; }
+    .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover { color: rgba(252,69,58,0.80) !important; box-shadow: inset 0 0 0 1px rgba(252,69,58,0.80) !important; }
+    .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover .chevron { color: rgba(252,69,58,0.80) !important; }
+    .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover .folder-check { border-color: rgba(252,69,58,0.80) !important; }
+    .folder .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover { color: rgba(252,69,58,0.70) !important; box-shadow: inset 0 0 0 1px rgba(252,69,58,0.70) !important; }
+    .folder .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover .chevron { color: rgba(252,69,58,0.70) !important; }
+    .folder .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover .folder-check { border-color: rgba(252,69,58,0.70) !important; }
+    .folder .folder .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover { color: rgba(252,69,58,0.60) !important; box-shadow: inset 0 0 0 1px rgba(252,69,58,0.60) !important; }
+    .folder .folder .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover .chevron { color: rgba(252,69,58,0.60) !important; }
+    .folder .folder .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover .folder-check { border-color: rgba(252,69,58,0.60) !important; }
+    .folder .folder .folder .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover { color: rgba(252,69,58,0.50) !important; box-shadow: inset 0 0 0 1px rgba(252,69,58,0.50) !important; }
+    .folder .folder .folder .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover .chevron { color: rgba(252,69,58,0.50) !important; }
+    .folder .folder .folder .folder .folder > .folder-header:has(.folder-check:not(:checked)):hover .folder-check { border-color: rgba(252,69,58,0.50) !important; }
+    /* Cascade to child folders on parent folder-header hover — depth-matched */
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block > .folder > .folder-header { color: rgba(252,69,58,0.80) !important; box-shadow: inset 0 0 0 1px rgba(252,69,58,0.80) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block > .folder > .folder-header .chevron { color: rgba(252,69,58,0.80) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block > .folder > .folder-header .folder-check { border-color: rgba(252,69,58,0.80) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder > .folder-header { color: rgba(252,69,58,0.70) !important; box-shadow: inset 0 0 0 1px rgba(252,69,58,0.70) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder > .folder-header .chevron { color: rgba(252,69,58,0.70) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder > .folder-header .folder-check { border-color: rgba(252,69,58,0.70) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder .folder > .folder-header { color: rgba(252,69,58,0.60) !important; box-shadow: inset 0 0 0 1px rgba(252,69,58,0.60) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder .folder > .folder-header .chevron { color: rgba(252,69,58,0.60) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder .folder > .folder-header .folder-check { border-color: rgba(252,69,58,0.60) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder .folder .folder > .folder-header { color: rgba(252,69,58,0.50) !important; box-shadow: inset 0 0 0 1px rgba(252,69,58,0.50) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder .folder .folder > .folder-header .chevron { color: rgba(252,69,58,0.50) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder .folder .folder > .folder-header .folder-check { border-color: rgba(252,69,58,0.50) !important; }
+    /* Token rows in cascade */
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .var-name { color: rgba(252,69,58,0.90) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .var-check { border-color: rgba(252,69,58,0.90) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .var-check:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23FC453A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder-check:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23FC453A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+    /* Child vertical rules also turn FC453A on parent hover */
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block::before { background: rgba(252,69,58,0.90) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder.expanded > .content-block::before { background: rgba(252,69,58,0.80) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder.expanded > .content-block::before { background: rgba(252,69,58,0.70) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder .folder.expanded > .content-block::before { background: rgba(252,69,58,0.60) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder .folder .folder.expanded > .content-block::before { background: rgba(252,69,58,0.50) !important; }
+    .folder-header:has(.folder-check:not(:checked)):hover ~ .content-block .folder .folder .folder .folder .folder.expanded > .content-block::before { background: rgba(252,69,58,0.40) !important; }
+
+    .chevron { margin-right: 8px; font-size: 10px; transition: transform 0.18s ease; display: inline-block; width: 10px; color: var(--text-primary); }
     .content-block { display: none; }
     .expanded > .content-block { display: block; }
     .expanded > .col-header > .chevron, .expanded > .folder-header > .chevron { transform: rotate(90deg); }
@@ -178,50 +523,50 @@
     .var-item::after {
       content: ''; position: absolute;
       left: 12px; right: 0; bottom: 0; height: 1px;
-      background: #323944;
+      background: rgba(252,69,58,0.20);
     }
     .var-item:last-child::after { display: none; }
-    .var-item:hover { background: #3a424e; }
+    .collection:has(.col-check:not(:checked)) .var-item::after { background: rgba(255,255,255,0.20); }
+    .collection:has(.col-check:checked) .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)) .var-item::after { background: rgba(255,255,255,0.20); }
+    .var-item:hover { background: rgba(252,69,58,0.20); border-radius: 0; }
     .var-item.is-hidden { opacity: 0.4; font-style: italic; }
     .var-name {
       flex: 1; margin-right: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      color: #fff; font-weight: 400;
+      color: var(--text-primary); font-weight: 400;
     }
 
     .var-type {
       font-family: 'SF Mono', 'Roboto Mono', monospace;
-      color: #ADD3E2; font-size: 8px; font-weight: 600; letter-spacing: 0.04em;
-      border: 1px solid #ADD3E2; padding: 2px 0;
+      color: #FC453A; font-size: 8px; font-weight: 600; letter-spacing: 0.04em;
+      border: 1px solid #FC453A; padding: 2px 0;
       border-radius: 3px; text-transform: uppercase; background: transparent; flex-shrink: 0;
       text-align: center; width: 44px; margin-left: 8px;
       transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
     }
     .var-item:has(.var-check:checked) .var-type {
-      background: #ADD3E2; color: #202128; border-color: #ADD3E2;
+      background: #FC453A; color: #000000; border-color: #FC453A;
     }
 
     /* ── Mode / Value Display ── */
     .val-text {
       font-family: 'SF Mono', 'Roboto Mono', monospace;
       font-size: 8px; text-transform: uppercase; letter-spacing: 0.03em;
-      color: #C8D2E4; text-align: center; width: 100%; white-space: nowrap;
+      color: #FC453A; text-align: center; width: 100%; white-space: nowrap;
     }
     .val-text.float-val { text-align: left; }
-    .val-text.selected { color: #1D3E73; font-weight: 600; transition: color 0.1s ease; }
+    .val-text.selected { color: #FC453A; font-weight: 600; transition: color 0.1s ease; }
 
     /* ── Mode Column Track ── */
-    /* Inline layout: [checkbox] [name] [↳ icon] — consistent 96px across all collections */
     .mode-header-container { display: flex; align-items: center; margin-left: auto; flex-shrink: 0; gap: 6px; }
     .column-track {
       flex: 0 0 96px; width: 96px;
       display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; flex-shrink: 0;
     }
     .mode-label {
-      font-size: 9px; color: #fff; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+      font-size: 9px; color: var(--text-primary); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       flex: 1; min-width: 0;
     }
-    /* Stacked layout below 500px plugin width */
     @media (max-width: 500px) {
       .column-track {
         flex: 0 0 56px; width: 56px;
@@ -237,28 +582,93 @@
       transition: box-shadow 0.1s ease;
     }
     .color-preview + .color-preview { margin-left: -4px; }
-    /* box-shadow avoids overflow:hidden clipping; z-index lifts above overlapping siblings */
     .color-preview.selected {
       position: relative; z-index: 1;
-      box-shadow: 0 0 0 1px #2A2D35, 0 0 0 2px #ADD3E2;
+      box-shadow: 0 0 0 1px var(--bg-page), 0 0 0 1.5px #FFFFFF;
+    }
+    .collection:has(.col-check:checked) .color-preview.selected {
+      box-shadow: 0 0 0 1px var(--bg-page), 0 0 0 1.5px #FC453A;
     }
 
     .folder-check { margin: 0 8px 0 0 !important; width: 14px !important; height: 14px !important; cursor: pointer; flex-shrink: 0; }
 
+    /* Unselected subgroups within a selected+expanded collection */
+    .collection.expanded:has(.col-check:checked) .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)) > .folder-header {
+      background: transparent; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.90); color: #FFFFFF;
+    }
+    .collection.expanded:has(.col-check:checked) .folder .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)) > .folder-header {
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.80);
+    }
+    .collection.expanded:has(.col-check:checked) .folder .folder .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)) > .folder-header {
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.70);
+    }
+    .collection.expanded:has(.col-check:checked) .folder .folder .folder .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)) > .folder-header {
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.60);
+    }
+    .collection.expanded:has(.col-check:checked) .folder .folder .folder .folder .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)) > .folder-header {
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.50);
+    }
+    .collection.expanded:has(.col-check:checked) .folder .folder .folder .folder .folder .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)) > .folder-header {
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.40);
+    }
+    /* Vertical rules for unselected subgroups within selected collection */
+    .collection.expanded:has(.col-check:checked) .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)).expanded > .content-block::before {
+      background: rgba(255,255,255,0.90);
+    }
+    .collection.expanded:has(.col-check:checked) .folder .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)).expanded > .content-block::before {
+      background: rgba(255,255,255,0.80);
+    }
+    .collection.expanded:has(.col-check:checked) .folder .folder .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)).expanded > .content-block::before {
+      background: rgba(255,255,255,0.70);
+    }
+    .collection.expanded:has(.col-check:checked) .folder .folder .folder .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)).expanded > .content-block::before {
+      background: rgba(255,255,255,0.60);
+    }
+    .collection.expanded:has(.col-check:checked) .folder .folder .folder .folder .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)).expanded > .content-block::before {
+      background: rgba(255,255,255,0.50);
+    }
+    .collection.expanded:has(.col-check:checked) .folder .folder .folder .folder .folder .folder:not(:has(.var-check:checked)):not(:has(.folder-check:checked)).expanded > .content-block::before {
+      background: rgba(255,255,255,0.40);
+    }
+    .collection.expanded:has(.col-check:checked) .folder-check:checked { background: #FFFFFF; }
+    .collection.expanded:has(.col-check:checked) .folder-check:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23FC453A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+
+    .col-check {
+      -webkit-appearance: none; appearance: none;
+      width: 14px !important; height: 14px !important; margin: 0 8px 0 0 !important;
+      border: 1px solid #000000; border-radius: 2px;
+      background: transparent; cursor: pointer; flex-shrink: 0;
+      position: relative;
+    }
+
     /* ── Footer ── */
     .footer {
       position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 16px; z-index: 100;
-      background: rgba(242,244,248,0.94); backdrop-filter: blur(20px) saturate(180%);
-      border-top: 1px solid #E2E8F2; display: flex; align-items: center; gap: 8px;
+      background: var(--footer-bg); backdrop-filter: blur(20px) saturate(180%);
+      border-top: 1px solid var(--footer-border); display: flex; align-items: center; gap: 8px;
     }
 
     .toggle-container {
       display: flex; align-items: center; gap: 0; margin-right: 12px;
-      font-size: 11px; font-weight: 500; color: #4B5A72;
+      font-size: 11px; font-weight: 500; color: var(--text-secondary);
       cursor: pointer; user-select: none; flex-shrink: 0;
     }
     .toggle-container input { margin: 0; width: 12px; height: 12px; cursor: pointer; }
-    input[type="checkbox"] { margin-right: 8px; cursor: pointer; width: 14px; height: 14px; accent-color: #ADD3E2; }
+    input[type="checkbox"] {
+      -webkit-appearance: none; appearance: none;
+      margin-right: 8px; cursor: pointer; width: 14px; height: 14px;
+      border: 1px solid #FFFFFF; border-radius: 2px;
+      background: transparent; position: relative; flex-shrink: 0;
+    }
+    input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute; left: 1px; top: 1px;
+      width: 10px; height: 10px;
+      background: no-repeat center/contain;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E");
+    }
 
     /* ── Buttons ── */
     button {
@@ -268,21 +678,21 @@
     }
 
     #export-btn {
-      background: #1D3E73; color: #fff;
+      background: var(--navy); color: #fff;
     }
-    #export-btn:hover { background: #162D56; box-shadow: 0 2px 8px rgba(29,62,115,0.3); }
-    #export-btn:active { background: #0F1F45; }
+    #export-btn:hover { background: var(--navy-dark); box-shadow: 0 2px 8px rgba(29,62,115,0.3); }
+    #export-btn:active { background: var(--navy-deeper); }
 
     #select-all {
-      background: #FFFFFF; color: #1D3E73; border: 1px solid #C8D2E4; flex: 0 0 96px;
+      background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border: 1px solid var(--btn-secondary-border); flex: 0 0 96px;
     }
-    #select-all:hover { background: #F4F7FC; border-color: #A8B8D0; }
+    #select-all:hover { background: var(--icon-btn-hover); border-color: #A8B8D0; }
 
-    #export-csv-btn { background: #1D3E73; color: #fff; }
-    #export-csv-btn:hover { background: #162D56; box-shadow: 0 2px 8px rgba(29,62,115,0.3); }
+    #export-csv-btn { background: var(--navy); color: #fff; }
+    #export-csv-btn:hover { background: var(--navy-dark); box-shadow: 0 2px 8px rgba(29,62,115,0.3); }
 
-    #export-txt-btn { background: #FFFFFF; color: #4B5A72; border: 1px solid #C8D2E4; }
-    #export-txt-btn:hover { background: #F4F7FC; }
+    #export-txt-btn { background: var(--btn-secondary-bg); color: var(--text-secondary); border: 1px solid var(--btn-secondary-border); }
+    #export-txt-btn:hover { background: var(--icon-btn-hover); }
 
     #export-json-btn { background: #6B46C1; color: #fff; }
     #export-json-btn:hover { background: #553898; box-shadow: 0 2px 8px rgba(107,70,193,0.3); }
@@ -290,12 +700,12 @@
     /* Export preset select — override inline styles */
     #export-preset {
       height: 30px !important; border-radius: 6px !important;
-      border: 1px solid #C8D2E4 !important; font-size: 11px !important;
-      padding: 0 8px !important; cursor: pointer; background: #FFFFFF;
-      color: #1D3E73; font-weight: 500; margin-right: 8px;
+      border: 1px solid var(--btn-secondary-border) !important; font-size: 11px !important;
+      padding: 0 8px !important; cursor: pointer; background: var(--select-bg);
+      color: var(--select-text); font-weight: 500; margin-right: 8px;
       transition: border-color 0.12s ease;
     }
-    #export-preset:focus { outline: none; border-color: #1D3E73 !important; }
+    #export-preset:focus { outline: none; border-color: var(--navy) !important; }
 
     .changelog-btn-disabled { opacity: 0.3 !important; cursor: not-allowed; pointer-events: none; }
 
@@ -306,23 +716,37 @@
 
     /* ── Child / Parent Mode Controls ── */
     .child-toggle {
-      font-size: 11px; color: #C8D2E4; cursor: pointer; margin: 0; flex-shrink: 0;
+      font-size: 11px; color: var(--text-secondary); cursor: pointer; margin: 0; flex-shrink: 0;
       line-height: 1; user-select: none; width: 16px; height: 16px;
       display: flex; align-items: center; justify-content: center; border-radius: 3px;
       transition: background 0.12s ease, color 0.12s ease;
     }
-    .child-toggle:hover { background: #EEF3FB; color: #4B5A72; }
-    .child-toggle.active { background: #EEF3FB; color: #1D3E73; font-weight: 700; }
+    .child-toggle:hover { background: var(--child-toggle-hover-bg); color: var(--child-toggle-hover-text); }
+    .child-toggle.active { background: var(--child-toggle-active-bg); color: var(--child-toggle-active-text); font-weight: 700; }
 
-    .mode-col-check { margin: 0 !important; width: 12px !important; height: 12px !important; cursor: pointer; flex-shrink: 0; }
+    .mode-col-check {
+      margin: 0 !important; width: 12px !important; height: 12px !important;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .mode-col-check:checked::after {
+      left: 1px !important; top: 1px !important;
+      width: 8px !important; height: 8px !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+    .collection:not(.expanded) .col-header:not(:has(.col-check:checked)):hover .mode-col-check:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23FC453A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+    .col-header:has(.col-check:checked) .mode-col-check:checked::after {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%23FC453A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
 
     .parent-select {
       flex-basis: 100%; width: 100%; font-size: 9px;
-      border: 1px solid #C8D2E4; border-radius: 3px; height: 18px;
-      background: #FFFFFF; color: #4B5A72; padding: 0 2px; cursor: pointer;
+      border: 1px solid var(--btn-secondary-border); border-radius: 3px; height: 18px;
+      background: var(--parent-select-bg); color: var(--parent-select-text); padding: 0 2px; cursor: pointer;
       box-sizing: border-box;
     }
-    .parent-select:focus { outline: 1.5px solid #1D3E73; border-color: #1D3E73; }
+    .parent-select:focus { outline: 1.5px solid var(--navy); border-color: var(--navy); }
 
   </style>
 </head>
@@ -330,6 +754,18 @@
   <div class="header">
     <span>TokenMAX</span>
     <div style="display:flex; gap:6px; align-items:center;">
+      <button id="theme-btn" class="icon-btn" title="Toggle light/dark mode">
+        <svg id="icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg id="icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
       <button id="expand-btn" class="icon-btn" title="Expand">
         <i id="icon-maximize" data-lucide="maximize-2" style="width:14px;height:14px;stroke-width:2;display:block;"></i>
         <i id="icon-minimize" data-lucide="minimize-2" style="width:14px;height:14px;stroke-width:2;display:none;"></i>
@@ -350,6 +786,7 @@
   </div>
   
   <div id="export-tab" class="tab-content active">
+    <div class="section-header">Collections</div>
     <div id="tree" class="tree-container">Gathering file variables...</div>
   </div>
   
@@ -382,7 +819,9 @@
         <option value="iOS">iOS</option>
         <option value="iOS2">iOS2</option>
         <option value="iOS3">iOS3</option>
-        <option value="iOS4">iOS4</option> </select>
+        <option value="iOS4">iOS4</option>
+        <option value="iOS5">iOS5</option>
+        <option value="iOS6">iOS6</option> </select>
 
     <button id="select-all">Select All</button>
     <button id="export-btn">Export JSON</button>
@@ -437,6 +876,29 @@
         savedPosition = { x: window.screenX, y: window.screenY };
       }
     });
+
+    // ── Theme toggle ──
+    let currentTheme = 'dark';
+
+    function applyTheme(theme) {
+      currentTheme = theme;
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light', isLight);
+      const sun = document.getElementById('icon-sun');
+      const moon = document.getElementById('icon-moon');
+      if (sun) sun.style.display = isLight ? 'none' : 'block';
+      if (moon) moon.style.display = isLight ? 'block' : 'none';
+      // Persist via Figma clientStorage (postMessage to code.js)
+      parent.postMessage({ pluginMessage: { type: 'set-theme', theme } }, '*');
+    }
+
+    // Request saved theme from code.js on load
+    parent.postMessage({ pluginMessage: { type: 'get-theme' } }, '*');
+
+    document.getElementById('theme-btn').onclick = () => {
+      const next = document.body.classList.contains('light') ? 'dark' : 'light';
+      applyTheme(next);
+    };
 
     window.onload = () => {
       parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
@@ -518,7 +980,12 @@
     // --- UPDATED MESSAGE HANDLER (Fixes Table Refresh) ---
     window.onmessage = (event) => {
       const msg = event.data.pluginMessage;
-      
+
+      if (msg.type === 'load-theme') {
+        applyTheme(msg.theme || 'dark');
+        return;
+      }
+
       if (msg.type === 'load-data') {
         // 1. Update Global Data
         collectionsData = msg.collections;
@@ -581,7 +1048,7 @@
       if (folderName && parentPath) { displayName = `${parentPath} / ${folderName}`; }
 
       if (folderName) {
-        const checkboxHtml = depth === 1 ? `<input type="checkbox" class="folder-check" onclick="toggleFolderVars(this, event)">` : '';
+        const checkboxHtml = `<input type="checkbox" class="folder-check" onclick="toggleFolderVars(this, event)">`;
         html += `<div class="folder expanded depth-${depth}">
                   <div class="folder-header" onclick="toggleElement(this.parentElement)">
                     <span class="chevron">›</span>${checkboxHtml}<span>${displayName}${folderLabel}</span>
@@ -770,7 +1237,7 @@
 
       treeContainer.querySelectorAll('.var-check').forEach(ck => {
         if (savedVarIds.includes(ck.value)) ck.checked = true;
-        ck.onchange = (e) => { refreshHighlights(e.target.closest('.var-item')); updateExportButtonState(); };
+        ck.onchange = (e) => { refreshHighlights(e.target.closest('.var-item')); syncParentCheckboxes(e.target); updateExportButtonState(); };
       });
 
       document.querySelectorAll('.col-check').forEach(ck => {
@@ -791,12 +1258,35 @@
     // --- UI HELPERS ---
     function toggleElement(el) { el.classList.toggle('expanded'); }
     function toggleModeColumn(checkbox) { checkbox.closest('.collection').querySelectorAll('.var-item').forEach(refreshHighlights); }
+    function syncParentCheckboxes(el) {
+      let folder = el.closest('.folder');
+      while (folder) {
+        const folderCheck = folder.querySelector(':scope > .folder-header .folder-check');
+        if (folderCheck) {
+          const allVars = folder.querySelectorAll('.var-check');
+          const allChecked = allVars.length > 0 && Array.from(allVars).every(c => c.checked);
+          folderCheck.checked = allChecked;
+        }
+        folder = folder.parentElement?.closest('.folder');
+      }
+      // Also sync col-check
+      const collection = el.closest('.collection');
+      if (collection) {
+        const colCheck = collection.querySelector('.col-check');
+        if (colCheck) {
+          const allVars = collection.querySelectorAll('.var-check');
+          const allChecked = allVars.length > 0 && Array.from(allVars).every(c => c.checked);
+          colCheck.checked = allChecked;
+        }
+      }
+    }
     function toggleFolderVars(checkbox, event) {
       event.stopPropagation();
       const folder = checkbox.closest('.folder');
       folder.querySelectorAll('.var-check').forEach(c => c.checked = checkbox.checked);
       folder.querySelectorAll('.folder-check').forEach(f => f.checked = checkbox.checked);
       folder.querySelectorAll('.var-item').forEach(refreshHighlights);
+      syncParentCheckboxes(folder);
       updateExportButtonState();
     }
     function rgbToHex(color) {
@@ -975,13 +1465,16 @@
       });
 
       // --- 2. FLATTEN CURRENT DATA ---
+      const varTypeLookup = {};
       collectionsData.forEach(col => {
         col.modes.forEach(mode => {
           col.variables.forEach(v => {
-            if (!includeHidden && v.hidden) return; 
-            
+            if (!includeHidden && v.hidden) return;
+
             // Register Current Path by ID
             currentIdToPath.set(v.id, { col: col.name, path: v.name });
+            const isRadius = v.type === 'FLOAT' && v.scopes && v.scopes.length === 1 && v.scopes[0] === 'CORNER_RADIUS';
+            varTypeLookup[`${col.name}|${v.name}`] = isRadius ? 'RADIUS' : v.type;
 
             let val = v.valuesByMode[mode.modeId];
             if (val?.type === 'VARIABLE_ALIAS') val = `{${aliasMap[val.id] || 'unknown'}}`;
@@ -1090,7 +1583,7 @@
         if (isChange || isRename) {
           const groupKey = `${colName}|${varName}`;
           if (!groupedChanges[groupKey]) {
-              groupedChanges[groupKey] = { name: varName, col: colName, changes: [] };
+              groupedChanges[groupKey] = { name: varName, col: colName, varType: varTypeLookup[`${colName}|${varName}`] || '', changes: [] };
               
               if (isRename) {
                   groupedChanges[groupKey].changes.push({ 
@@ -1118,7 +1611,7 @@
               const currentModeId = modeLookup[`${colName}|${modeName}`];
               if (currentModeId) {
                   const groupKey = `${colName}|${oldVarName}`;
-                  if (!groupedChanges[groupKey]) groupedChanges[groupKey] = { name: oldVarName, col: colName, changes: [] };
+                  if (!groupedChanges[groupKey]) groupedChanges[groupKey] = { name: oldVarName, col: colName, varType: varTypeLookup[`${colName}|${oldVarName}`] || '', changes: [] };
                   groupedChanges[groupKey].changes.push({ mode: modeName, oldVal: oldVars[key], newVal: '(Removed)' });
               }
           }
@@ -1209,7 +1702,7 @@
 
             return `
               <div class="mode-change-item">
-                <span style="font-weight:600; color:#555;">${c.mode}</span>
+                <span style="font-weight:600; color:#C8D2E4;">${c.mode}</span>
                 <span class="val-pill ${oldValClass}" title="${c.oldVal}" style="${c.oldVal === '(Excluded)' ? 'color:#999; background:#eee;' : ''}">${displayOldVal}</span>
                 <span class="arrow-icon">➜</span>
                 <span class="val-pill ${newValClass}" title="${c.newVal}">${displayNewVal}</span>
@@ -1218,14 +1711,35 @@
         
         let nameStyle = "font-weight:600; font-size: 12px;";
         if (group.name.includes("Mode Renamed")) nameStyle += " color: #E67E22;";
-        if (group.name.includes("New Mode")) nameStyle += " color: #1D3E73;";
+        if (group.name.includes("New Mode")) nameStyle += " color: #ADD3E2;";
         if (group.name.includes("Mode Removed")) nameStyle += " color: #D32F2F;";
 
-        tableHtml += `<tr class="diff-row"><td class="col-check-td"><input type="checkbox" class="change-check" checked></td><td style="vertical-align: top; padding-top: 12px;"><div style="${nameStyle}">${group.name}</div><div style="color:#999; font-size:10px; margin-top:4px;">${group.col}</div></td><td><div class="mode-change-list">${modesHtml}</div></td></tr>`;
+        const displayName = group.name.includes('/') ? group.name.split('/').pop().trim() : group.name;
+        const rowType = group.varType || '';
+        tableHtml += `<tr class="diff-row" data-var-type="${rowType}"><td class="col-check-td"><input type="checkbox" class="change-check" checked></td><td style="vertical-align: top; padding-top: 12px;"><div style="${nameStyle}" title="${group.name}">${displayName}</div><div style="color:#999; font-size:10px; margin-top:4px;">${group.col}</div></td><td><div class="mode-change-list">${modesHtml}</div></td></tr>`;
       });
       tableHtml += `</tbody></table>`;
       
-      document.getElementById('diff-results').innerHTML = totalChangeCount > 0 ? `<h4>Found changes in <em>${fileName}</em></h4>` + tableHtml : `<h4>No changes detected.</h4>`;
+      const typeFilterHtml = `<select id="changelog-type-select" style="height:28px; border-radius:6px; border:1px solid var(--border-medium); font-size:11px; padding:0 8px; cursor:pointer; background:var(--bg-surface); color:var(--text-primary); font-weight:500; outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border-medium)'"><option value="All">All</option><option value="COLOR">Color</option><option value="RADIUS">Radius</option></select>`;
+      document.getElementById('diff-results').innerHTML = totalChangeCount > 0
+        ? `<div style="display:flex; align-items:center; justify-content:space-between;"><h4 style="color:var(--text-primary); margin:0;">Found changes in <em>${fileName}</em></h4>${typeFilterHtml}</div>` + tableHtml
+        : `<h4 style="color:var(--text-primary);">No changes detected.</h4>`;
+
+      // Wire up type filter
+      const typeSelect = document.getElementById('changelog-type-select');
+      if (typeSelect) {
+        typeSelect.onchange = () => {
+          const val = typeSelect.value;
+          document.querySelectorAll('#diff-results .diff-row').forEach(row => {
+            if (val === 'All' || !row.dataset.varType || row.dataset.varType === val) {
+              row.style.display = '';
+            } else {
+              row.style.display = 'none';
+            }
+          });
+        };
+      }
+
       const headerCheck = document.getElementById('changelog-header-check');
       if (headerCheck) {
         headerCheck.onchange = () => {
@@ -1265,6 +1779,21 @@
       a.href = url;
       a.download = filename;
       a.click();
+    }
+
+    function getFilteredChanges() {
+      const typeSelect = document.getElementById('changelog-type-select');
+      const filterVal = typeSelect ? typeSelect.value : 'All';
+      const rows = Array.from(document.querySelectorAll('#diff-results .diff-row'));
+      const filtered = [];
+      rows.forEach((row, idx) => {
+        const checked = row.querySelector('.change-check')?.checked;
+        if (!checked) return;
+        const type = row.dataset.varType || '';
+        if (filterVal !== 'All' && type && type !== filterVal) return;
+        if (currentChanges[idx]) filtered.push(currentChanges[idx]);
+      });
+      return filtered;
     }
     
     // --- 1. RESTORED JSON EXPORT LISTENER ---
@@ -1323,15 +1852,17 @@
       const cleanFileName = currentFileName.replace(/\s*\|\s*/g, '_').replace(/\s+/g, '-');
       
       const exportFilename = `changelog_${cleanFileName}_${fileDate}_${fileTime}.txt`;
-      const totalDiffs = currentChanges.reduce((acc, curr) => acc + curr.changes.length, 0);
+      const exportChanges = getFilteredChanges();
+      if (exportChanges.length === 0) return alert("No changes to export.");
+      const totalDiffs = exportChanges.reduce((acc, curr) => acc + curr.changes.length, 0);
 
-      let txtContent = `Change Log Export\n` + 
+      let txtContent = `Change Log Export\n` +
                        `Current File: ${currentFileName}\n` +
-                       `Compared Against: ${lastUploadedFileName}\n` + 
-                       `Date: ${now.toLocaleString()}\n` + 
-                       `Tokens Updated: ${currentChanges.length}\n` + 
+                       `Compared Against: ${lastUploadedFileName}\n` +
+                       `Date: ${now.toLocaleString()}\n` +
+                       `Tokens Updated: ${exportChanges.length}\n` +
                        `Total Changes: ${totalDiffs}\n\n`;
-      
+
       // Cleans standard values (removes {}, hides Library/Collection name from alias path)
       const cleanVal = (val) => {
         const s = String(val);
@@ -1346,31 +1877,31 @@
       // Cleans rename paths (keeps ONLY the variable name)
       const getShortName = (path) => {
         const parts = String(path).split('/');
-        return parts[parts.length - 1]; 
+        return parts[parts.length - 1];
       };
 
       // Strip UI Emojis completely from output file
       const stripIcons = (str) => String(str).replace(/[✨🗑️🏷️]\s?/g, '');
-      
+
       // Jira Color Macros (Kept for TXT only)
       const formatJiraColor = (name, changes) => {
           let hasNew = false;
           let hasRemoved = false;
           let hasRename = false;
-          
+
           changes.forEach(c => {
               if (c.oldVal === '(New)') hasNew = true;
               if (c.newVal === '(Removed)') hasRemoved = true;
               if (c.isRenameEvent) hasRename = true;
           });
-          
+
           if (hasRename) return `{color:#18A0FB}${name}{color}`; // Blue
           if (hasRemoved && !hasNew) return `{color:#D32F2F}${name}{color}`; // Red
           if (hasNew && !hasRemoved) return `{color:#14AE5C}${name}{color}`; // Green
           return name; // Black
       };
 
-      currentChanges.forEach(group => {
+      exportChanges.forEach(group => {
         const cleanGroupName = stripIcons(group.name);
         txtContent += `${formatJiraColor(cleanGroupName, group.changes)}\n`;
         group.changes.forEach(c => {
@@ -1388,7 +1919,8 @@
     };
 
     document.getElementById('export-csv-btn').onclick = () => {
-      if (currentChanges.length === 0) return alert("No changes to export.");
+      const exportChanges = getFilteredChanges();
+      if (exportChanges.length === 0) return alert("No changes to export.");
       
       const now = new Date();
       const YYYY = now.getFullYear().toString();
@@ -1426,7 +1958,7 @@
         return parts[parts.length - 1]; 
       };
                        
-      currentChanges.forEach(group => {
+      exportChanges.forEach(group => {
         const cleanCol = `"${group.col.replace(/"/g, '""')}"`;
         // Removed Jira coloring here, just using the clean stripped name
         const cleanName = `"${stripIcons(group.name).replace(/"/g, '""')}"`;
@@ -1449,11 +1981,7 @@
 
     // --- CHANGELOG EXPORT JSON ---
     document.getElementById('export-json-btn').onclick = () => {
-      const selectedChanges = Array.from(document.querySelectorAll('#diff-results .change-check'))
-        .map((checkbox, idx) => ({ checkbox, group: currentChanges[idx] }))
-        .filter(({ checkbox }) => checkbox.checked)
-        .map(({ group }) => group);
-
+      const selectedChanges = getFilteredChanges();
       if (selectedChanges.length === 0) return alert('Select at least one change to export.');
 
       const _stripIcons = (str) => String(str).replace(/[✨🗑️🏷️]\s?/g, '');
@@ -1504,6 +2032,13 @@
       triggerDownload(JSON.stringify(output, null, 2), exportFilename, 'application/json');
     };
 
+    // iOS5 helper: normalize mode name for bucket keys (Light/Dark)
+    function ios5BucketName(modeName) {
+        if (modeName.includes('Light')) return 'Light';
+        if (modeName.includes('Dark')) return 'Dark';
+        return modeName;
+    }
+
     function formatJson(selectedIds, metaData, preset = "Default") {
       const exposeUnderlying = document.getElementById('expose-underlying-toggle').checked;
       
@@ -1511,7 +2046,17 @@
         if (!val) return null;
         if (val.type === 'VARIABLE_ALIAS') return `{${aliasMap[val.id] || 'unknown'}}`;
         if (typeof val === 'object' && val.r !== undefined) return rgbToHex(val);
-        return val; 
+        return val;
+      };
+
+      // iOS6: shorten alias paths to last 2 segments — {Primitive Colors/RATIO/Neutral/0} → {Neutral/0}
+      const shortenAlias = (val) => {
+        if (typeof val !== 'string') return val;
+        if (!val.startsWith('{') || !val.endsWith('}')) return val;
+        const inner = val.slice(1, -1);
+        const parts = inner.split('/');
+        if (parts.length <= 2) return val;
+        return `{${parts.slice(-2).join('/')}}`;
       };
 
       const globalKnowledge = {};
@@ -1528,9 +2073,9 @@
             } 
         };
 
-        if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4') {
+        if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6') {
             colResult[col.name].modes = {};
-        } else if (preset === 'iOS3' || preset === 'iOS4') {
+        } else if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') {
             colResult[col.name].$index = {};
         }
 
@@ -1561,7 +2106,7 @@
 
           // --- iOS3 DOMINANT COLORS ---
           const dominantColors = { Fall: "", Buy: "" };
-          if (preset === 'iOS3' || preset === 'iOS4') {
+          if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') {
               col.variables.forEach(v => {
                   if (!selectedIds.includes(v.id)) return;
                   
@@ -1595,15 +2140,40 @@
                 }
 
                 let iosIndex = null;
-                const activePreset = ["iOS", "iOS2", "iOS3", "iOS4"].includes(preset);
+                const activePreset = ["iOS", "iOS2", "iOS3", "iOS4", "iOS5", "iOS6"].includes(preset);
                 
                 if (activePreset && parentId && allFamilyIds.length > 0) {
                     const parentValStr = String(getExportValue(v.valuesByMode[parentId]));
                     const allMatch = allFamilyIds.every(id => String(getExportValue(v.valuesByMode[id])) === parentValStr);
-                    const safeModeName = mode.name.split(' ')[0]; // e.g. "Light"
-                    const safeParentName = (collectionsData.find(c=>c.id===col.id).modes.find(m=>m.modeId===parentId).name).split(' ')[0]; // e.g. "Light"
+                    let safeModeName = mode.name.split(' ')[0]; // e.g. "Light"
+                    let safeParentName = (collectionsData.find(c=>c.id===col.id).modes.find(m=>m.modeId===parentId).name).split(' ')[0]; // e.g. "Light"
+                    if (preset === 'iOS5' || preset === 'iOS6') {
+                        safeModeName = ios5BucketName(mode.name);
+                        safeParentName = ios5BucketName(collectionsData.find(c=>c.id===col.id).modes.find(m=>m.modeId===parentId).name);
+                    }
 
-                    if (allMatch) {
+                    // iOS5: keyword family membership trumps allMatch — entire families
+                    // (Buy, Sell, Positive, Negative incl. "On" tokens) stay together.
+                    const keywords = ["Positive", "Negative", "Buy", "Sell"];
+                    const hasKeyword = keywords.some(kw => v.name.includes(kw));
+
+                    if ((preset === 'iOS5' || preset === 'iOS6') && hasKeyword) {
+                        let colorName = "";
+                        if (finalValue && finalValue.includes('/')) {
+                            const valParts = finalValue.replace(/[{}]/g, '').split('/');
+                            colorName = valParts.length >= 2 ? valParts[valParts.length - 2] : valParts[0];
+                        }
+                        let prefix = "RiseFall";
+                        let groupName = "Fall";
+                        if (v.name.includes("Positive") || v.name.includes("Negative")) {
+                            if (dominantColors.Fall) colorName = dominantColors.Fall;
+                        } else if (v.name.includes("Buy") || v.name.includes("Sell")) {
+                            prefix = "BuySell";
+                            groupName = "Buy";
+                            if (dominantColors.Buy) colorName = dominantColors.Buy;
+                        }
+                        iosIndex = `${prefix}/${groupName}${colorName}/${safeModeName}`;
+                    } else if (allMatch) {
                         iosIndex = `Common/${safeParentName}`;
                     } else {
                         let colorName = "";
@@ -1611,13 +2181,11 @@
                             const valParts = finalValue.replace(/[{}]/g, '').split('/');
                             colorName = valParts.length >= 2 ? valParts[valParts.length - 2] : valParts[0];
                         }
-                        
+
                         let groupName = "";
                         let prefix = "RiseFall";
-                        const keywords = ["Positive", "Negative", "Buy", "Sell"];
-                        const hasKeyword = keywords.some(kw => v.name.includes(kw));
 
-                        if (preset === 'iOS3' || preset === 'iOS4') {
+                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') {
                             if (v.name.includes("Positive") || v.name.includes("Negative")) {
                                 prefix = "RiseFall";
                                 groupName = "Fall";
@@ -1627,17 +2195,17 @@
                                 groupName = "Buy";
                                 if (dominantColors.Buy) colorName = dominantColors.Buy;
                             }
-                            
+
                             // If it has a keyword, route it to the specific bucket
                             if (hasKeyword) {
                                 iosIndex = `${prefix}/${groupName}${colorName}/${safeModeName}`;
                             } else {
                                 // FIX: If it doesn't have a keyword but failed the allMatch check (like Surface),
                                 // it's just a Common variable with an override. Leave it in Common.
-                                iosIndex = `Common/${safeParentName}`; 
+                                iosIndex = `Common/${safeParentName}`;
                             }
-                            
-                        } else { 
+
+                        } else {
                             for (const kw of keywords) { if (v.name.includes(kw)) { groupName = kw; break; } }
                             if (groupName) {
                                 if (preset === 'iOS2') {
@@ -1655,7 +2223,7 @@
                     // Deduplication logic: If a child mode's value is the exact same as the parent's value,
                     // AND it belongs in Common, skip exporting it to prevent duplicates in the JSON.
                     if (isChild) {
-                        if (preset === 'iOS3' || preset === 'iOS4') {
+                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') {
                             if (String(finalValue) === parentValStr && iosIndex && iosIndex.startsWith("Common/")) return;
                         }
                         else {
@@ -1664,23 +2232,30 @@
                     }
                 }
 
-                // --- iOS4 FALLBACK: name-based bucketing when no parent/child configured ---
-                if (preset === 'iOS4' && !iosIndex) {
-                    const safeModeName = mode.name;
+                // --- iOS4/iOS5 FALLBACK: name-based bucketing when no parent/child configured ---
+                if ((preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') && !iosIndex) {
+                    const safeModeName = (preset === 'iOS5' || preset === 'iOS6') ? ios5BucketName(mode.name) : mode.name;
                     const leafName = v.name.split('/').pop().trim();
-                    // Plain "On *" tokens (On Buy, On Negative, On Positive Inverse etc.) alias neutral
-                    // primitives and belong in Common. "On *Subtle" tokens alias colored primitives
-                    // that invert across modes and should be bucketed with their family.
-                    const isPlainOnToken = leafName.startsWith('On ') && !leafName.endsWith(' Subtle');
+                    // iOS4: Plain "On *" tokens (On Buy, On Negative, etc.) route to Common.
+                    // iOS5: All keyword tokens route to their keyword bucket regardless of "On " prefix.
+                    const isPlainOnToken = preset !== 'iOS5' && preset !== 'iOS6' && leafName.startsWith('On ') && !leafName.endsWith(' Subtle');
                     let colorName = '';
                     if (finalValue && finalValue.includes('/')) {
                         const valParts = finalValue.replace(/[{}]/g, '').split('/');
                         colorName = valParts.length >= 2 ? valParts[valParts.length - 2] : valParts[0];
                     }
-                    if (!isPlainOnToken && (v.name.includes('Negative') || v.name.includes('Sell'))) {
+                    // iOS5: Positive+Negative → RiseFall, Buy+Sell → BuySell (matches parent-child path)
+                    // iOS4: Negative+Sell → RiseFall, Positive+Buy → BuySell (legacy)
+                    if ((preset === 'iOS5' || preset === 'iOS6') && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Negative'))) {
                         if (dominantColors.Fall) colorName = dominantColors.Fall;
                         iosIndex = `RiseFall/Fall${colorName}/${safeModeName}`;
-                    } else if (!isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Buy'))) {
+                    } else if ((preset === 'iOS5' || preset === 'iOS6') && !isPlainOnToken && (v.name.includes('Buy') || v.name.includes('Sell'))) {
+                        if (dominantColors.Buy) colorName = dominantColors.Buy;
+                        iosIndex = `BuySell/Buy${colorName}/${safeModeName}`;
+                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && !isPlainOnToken && (v.name.includes('Negative') || v.name.includes('Sell'))) {
+                        if (dominantColors.Fall) colorName = dominantColors.Fall;
+                        iosIndex = `RiseFall/Fall${colorName}/${safeModeName}`;
+                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Buy'))) {
                         if (dominantColors.Buy) colorName = dominantColors.Buy;
                         iosIndex = `BuySell/Buy${colorName}/${safeModeName}`;
                     } else {
@@ -1691,8 +2266,8 @@
                 hasSelected = true;
                 let targetStorage;
 
-                if ((preset === 'iOS2' || preset === 'iOS3' || preset === 'iOS4') && iosIndex) {
-                    const root = (preset === 'iOS3' || preset === 'iOS4') ? colResult[col.name].$index : colResult[col.name];
+                if ((preset === 'iOS2' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') && iosIndex) {
+                    const root = (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') ? colResult[col.name].$index : colResult[col.name];
                     if (!root[iosIndex]) root[iosIndex] = {};
                     targetStorage = root[iosIndex];
                 } else {
@@ -1708,7 +2283,7 @@
                     "$type": v.type.toLowerCase(),
                     "$libraryName": currentFileName,
                     "$collectionName": col.name,
-                    "$value": finalValue
+                    "$value": preset === 'iOS6' ? shortenAlias(finalValue) : finalValue
                 };
 
                 if (exposeUnderlying && rawValue && rawValue.type === 'VARIABLE_ALIAS') {
@@ -1721,8 +2296,8 @@
                     }
                 }
 
-                if (preset === 'iOS3' || preset === 'iOS4') varObj["$mode"] = mode.name;
-                if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && iosIndex) varObj["$index"] = iosIndex;
+                if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') varObj["$mode"] = mode.name;
+                if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && iosIndex) varObj["$index"] = iosIndex;
 
                 let current = targetStorage;
                 if (parts.length > 0) {
