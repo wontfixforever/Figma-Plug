@@ -167,4 +167,13 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'set-theme') {
     await figma.clientStorage.setAsync('tokenmax-theme', msg.theme);
   }
+
+  if (msg.type === 'get-tags') {
+    const tags = await figma.clientStorage.getAsync('tokenmax-tags');
+    figma.ui.postMessage({ type: 'load-tags', tags: tags || [] });
+  }
+
+  if (msg.type === 'set-tags') {
+    await figma.clientStorage.setAsync('tokenmax-tags', msg.tags);
+  }
 };
