@@ -4,6 +4,7 @@ figma.showUI(__html__, { width: 800, height: 600 });
 async function loadVariables() {
   try {
     const collections = figma.variables.getLocalVariableCollections();
+
     const localVariables = figma.variables.getLocalVariables();
     const fileName = figma.root.name;
 
@@ -124,8 +125,6 @@ async function loadVariables() {
         variables: processedVars.filter(v => v !== null) 
       };
     }));
-
-    dataForUi.sort((a, b) => a.name.localeCompare(b.name));
 
     // Send data to UI
     figma.ui.postMessage({ 

@@ -944,6 +944,28 @@
     .diff-row td.col-check-td { width: 28px; padding: 8px 4px; text-align: center; vertical-align: middle; }
     .change-check { width: 14px; height: 14px; cursor: pointer; margin: 0; display: inline-block; }
 
+    /* ── Collection Link Button ── */
+    .col-header:not(:has(.col-check:checked)) .connect-btn { display: none; }
+    .connect-btn.linked {
+      background: var(--navy) !important;
+      border-color: var(--navy) !important;
+      color: #fff;
+    }
+    .connect-dropdown {
+      display: none;
+      margin-left: 8px;
+      height: 24px;
+      font-size: 10px;
+      border: 1px solid var(--btn-secondary-border);
+      border-radius: 4px;
+      background: var(--select-bg);
+      color: var(--select-text);
+      padding: 0 4px;
+      cursor: pointer;
+      max-width: 160px;
+      flex-shrink: 0;
+    }
+
     /* ── Child / Parent Mode Controls ── */
     .child-toggle {
       font-size: 11px; color: var(--text-secondary); cursor: pointer; margin: 0; flex-shrink: 0;
@@ -1178,7 +1200,8 @@
         <option value="iOS3">iOS3</option>
         <option value="iOS4">iOS4</option>
         <option value="iOS5">iOS5</option>
-        <option value="iOS6">iOS6</option> </select>
+        <option value="iOS6">iOS6</option>
+        <option value="iOS7">iOS7</option> </select>
 
     <button id="select-all">Select All</button>
     <button id="export-btn">Export JSON</button>
@@ -1232,6 +1255,9 @@
 
     // NEW: Track Parent assignments { "colId|childModeId": "parentModeId" }
     let parentAssignments = {};
+
+    // Collection-level parent-child links { childColId: parentColId } — cleared on col uncheck
+    let collectionParents = {};
 
     // ── Tag system ──
     const DEFAULT_TAGS = ['iTWS', 'aTWS', 'iGT', 'aGT', 'Web', 'nTWS', 'Impact', 'Primitives'];
@@ -1598,8 +1624,18 @@
           colEl.innerHTML = `
             <div class="col-header" onclick="toggleElement(this.parentElement)">
               <span class="chevron">›</span>
-              <input type="checkbox" class="col-check" data-id="${col.id}" onclick="event.stopPropagation()">
+              <input type="checkbox" class="col-check" data-id="${col.id}" onclick="event.stopPropagation(); if(!this.checked) clearCollectionParent('${col.id}')">
               <span style="flex-grow: 1;">${col.name}${colLabel}</span>
+              <button class="icon-btn connect-btn ${collectionParents[col.id] ? 'linked' : ''}"
+                      data-colid="${col.id}"
+                      onclick="toggleConnectDropdown('${col.id}', event)"
+                      title="${collectionParents[col.id] ? 'Linked to parent' : 'Link to parent collection'}">
+                <i data-lucide="link-2" style="width:12px;height:12px;"></i>
+              </button>
+              <select class="connect-dropdown" id="connect-dd-${col.id}"
+                      onchange="setCollectionParent('${col.id}', this.value, event)"
+                      onclick="event.stopPropagation()">
+              </select>
               <div class="mode-header-container" onclick="event.stopPropagation()">
                 ${modeHeadersHtml}
                 <div style="width: 129px;"></div> 
@@ -2265,6 +2301,7 @@
       if (selectedIds.length === 0) return alert("Select variables first.");
 
       const preset = document.getElementById('export-preset').value;
+      const primitivesChecked = document.getElementById('primitives-toggle').checked;
 
       const now = new Date();
       const YYYY = now.getFullYear().toString();
@@ -2290,7 +2327,7 @@
         originalFileName: currentFileName,
         date: metaDate,
         time: metaTime,
-        preset: preset
+        preset: primitivesChecked ? [preset, 'Primitives'] : preset
       };
       if (tags.length > 0) metaData.tags = tags;
 
@@ -2510,11 +2547,85 @@
       triggerDownload(JSON.stringify(output, null, 2), exportFilename, 'application/json');
     };
 
+    // ── Collection link functions ──
+
+    function toggleConnectDropdown(colId, event) {
+      event.stopPropagation();
+      const dd = document.getElementById('connect-dd-' + colId);
+      if (!dd) return;
+      if (dd.style.display === 'block') {
+        dd.style.display = 'none';
+        return;
+      }
+      // Populate options
+      const includeHidden = document.getElementById('show-hidden-toggle').checked;
+      dd.innerHTML = '<option value="">No parent</option>';
+      collectionsData.forEach(c => {
+        if (c.id === colId) return;
+        const allHidden = c.variables.every(v => v.hidden);
+        if (!includeHidden && allHidden) return;
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        if (collectionParents[colId] === c.id) opt.selected = true;
+        dd.appendChild(opt);
+      });
+      dd.style.display = 'block';
+      dd.focus();
+    }
+
+    function setCollectionParent(childId, parentId, event) {
+      event.stopPropagation();
+      if (parentId === '') {
+        delete collectionParents[childId];
+      } else {
+        collectionParents[childId] = parentId;
+      }
+      // Update button linked state
+      const btn = document.querySelector(`.connect-btn[data-colid="${childId}"]`);
+      if (btn) btn.classList.toggle('linked', !!collectionParents[childId]);
+      // Hide dropdown
+      const dd = document.getElementById('connect-dd-' + childId);
+      if (dd) dd.style.display = 'none';
+      lucide.createIcons();
+    }
+
+    function clearCollectionParent(colId) {
+      delete collectionParents[colId];
+      const btn = document.querySelector(`.connect-btn[data-colid="${colId}"]`);
+      if (btn) btn.classList.remove('linked');
+      const dd = document.getElementById('connect-dd-' + colId);
+      if (dd) dd.style.display = 'none';
+    }
+
     // iOS5 helper: normalize mode name for bucket keys (Light/Dark)
     function ios5BucketName(modeName) {
         if (modeName.includes('Light')) return 'Light';
         if (modeName.includes('Dark')) return 'Dark';
         return modeName;
+    }
+
+    function extractUniqueSuffix(parentName, childName) {
+      const parentWords = new Set(parentName.split(/\s+/));
+      return childName.split(/\s+/).filter(w => !parentWords.has(w)).join('');
+    }
+
+    function isIdenticalToParent(childVar, parentVar, childCol, parentCol) {
+      let sharedModes = 0;
+      for (const childMode of childCol.modes) {
+        const normalizedChild = ios5BucketName(childMode.name);
+        const parentMode = parentCol.modes.find(m => ios5BucketName(m.name) === normalizedChild);
+        if (!parentMode) continue;
+        sharedModes++;
+        const childVal = String(childVar.valuesByMode[childMode.modeId] && childVar.valuesByMode[childMode.modeId].type === 'VARIABLE_ALIAS'
+          ? childVar.valuesByMode[childMode.modeId].id
+          : childVar.valuesByMode[childMode.modeId]);
+        const parentVal = String(parentVar.valuesByMode[parentMode.modeId] && parentVar.valuesByMode[parentMode.modeId].type === 'VARIABLE_ALIAS'
+          ? parentVar.valuesByMode[parentMode.modeId].id
+          : parentVar.valuesByMode[parentMode.modeId]);
+        if (childVal !== parentVal) return false;
+      }
+      return sharedModes > 0;
     }
 
     function formatJson(selectedIds, metaData, preset = "Default") {
@@ -2529,13 +2640,14 @@
       };
 
       // iOS6: shorten alias paths to last 2 segments — {Primitive Colors/RATIO/Neutral/0} → {Neutral/0}
-      const shortenAlias = (val) => {
+      const shortenAlias = (val, keepSegments = 2) => {
         if (typeof val !== 'string') return val;
         if (!val.startsWith('{') || !val.endsWith('}')) return val;
         const inner = val.slice(1, -1);
         const parts = inner.split('/');
         if (parts.length <= 2) return val;
-        return `{${parts.slice(-2).join('/')}}`;
+        const take = Math.min(keepSegments, parts.length - 1);
+        return `{${parts.slice(-take).join('/')}}`;
       };
 
       const globalKnowledge = {};
@@ -2545,6 +2657,22 @@
           globalKnowledge[c.name] = modes; 
       });
 
+      // Build active collection parent-child pairs for this export
+      const exportingColIds = new Set(
+        collectionsData.filter(c => c.variables.some(v => selectedIds.includes(v.id))).map(c => c.id)
+      );
+      const activeChildPairs = {};
+      for (const [childId, parentId] of Object.entries(collectionParents)) {
+        if (exportingColIds.has(childId) && exportingColIds.has(parentId)) {
+          const parentCol = collectionsData.find(c => c.id === parentId);
+          const childCol  = collectionsData.find(c => c.id === childId);
+          activeChildPairs[childId] = {
+            parentCol,
+            uniqueSuffix: extractUniqueSuffix(parentCol.name, childCol.name)
+          };
+        }
+      }
+
       const results = collectionsData.map(col => {
         const colResult = { 
             [col.name]: { 
@@ -2552,9 +2680,9 @@
             } 
         };
 
-        if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6') {
-            colResult[col.name].modes = {};
-        } else if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') {
+        if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7') {
+            if (!primitivesMode) colResult[col.name].modes = {};
+        } else if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') {
             colResult[col.name].$index = {};
         }
 
@@ -2603,7 +2731,7 @@
 
           // --- iOS3 DOMINANT COLORS ---
           const dominantColors = { Fall: "", Buy: "" };
-          if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') {
+          if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') {
               col.variables.forEach(v => {
                   if (!selectedIds.includes(v.id)) return;
                   
@@ -2628,6 +2756,13 @@
           
           col.variables.forEach(v => {
              if (selectedIds.includes(v.id)) {
+                // All presets: skip child vars that are identical to their linked parent collection
+                if (activeChildPairs[col.id]) {
+                  const { parentCol } = activeChildPairs[col.id];
+                  const parentVar = parentCol.variables.find(pv => pv.name === v.name);
+                  if (parentVar && isIdenticalToParent(v, parentVar, col, parentCol)) return;
+                }
+
                 const rawValue = v.valuesByMode[mode.modeId];
                 const finalValue = getExportValue(rawValue);
 
@@ -2637,14 +2772,14 @@
                 }
 
                 let iosIndex = null;
-                const activePreset = ["iOS", "iOS2", "iOS3", "iOS4", "iOS5", "iOS6"].includes(preset);
+                const activePreset = ["iOS", "iOS2", "iOS3", "iOS4", "iOS5", "iOS6", "iOS7"].includes(preset);
                 
                 if (activePreset && parentId && allFamilyIds.length > 0) {
                     const parentValStr = String(getExportValue(v.valuesByMode[parentId]));
                     const allMatch = allFamilyIds.every(id => String(getExportValue(v.valuesByMode[id])) === parentValStr);
                     let safeModeName = mode.name.split(' ')[0]; // e.g. "Light"
                     let safeParentName = (collectionsData.find(c=>c.id===col.id).modes.find(m=>m.modeId===parentId).name).split(' ')[0]; // e.g. "Light"
-                    if (preset === 'iOS5' || preset === 'iOS6') {
+                    if (preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') {
                         safeModeName = ios5BucketName(mode.name);
                         safeParentName = ios5BucketName(collectionsData.find(c=>c.id===col.id).modes.find(m=>m.modeId===parentId).name);
                     }
@@ -2654,7 +2789,7 @@
                     const keywords = ["Positive", "Negative", "Buy", "Sell"];
                     const hasKeyword = keywords.some(kw => v.name.includes(kw));
 
-                    if ((preset === 'iOS5' || preset === 'iOS6') && hasKeyword) {
+                    if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') && hasKeyword) {
                         let colorName = "";
                         if (finalValue && finalValue.includes('/')) {
                             const valParts = finalValue.replace(/[{}]/g, '').split('/');
@@ -2682,7 +2817,7 @@
                         let groupName = "";
                         let prefix = "RiseFall";
 
-                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') {
+                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') {
                             if (v.name.includes("Positive") || v.name.includes("Negative")) {
                                 prefix = "RiseFall";
                                 groupName = "Fall";
@@ -2720,7 +2855,7 @@
                     // Deduplication logic: If a child mode's value is the exact same as the parent's value,
                     // AND it belongs in Common, skip exporting it to prevent duplicates in the JSON.
                     if (isChild) {
-                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') {
+                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') {
                             if (String(finalValue) === parentValStr && iosIndex && iosIndex.startsWith("Common/")) return;
                         }
                         else {
@@ -2730,12 +2865,12 @@
                 }
 
                 // --- iOS4/iOS5 FALLBACK: name-based bucketing when no parent/child configured ---
-                if ((preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') && !iosIndex) {
-                    const safeModeName = (preset === 'iOS5' || preset === 'iOS6') ? ios5BucketName(mode.name) : mode.name;
+                if ((preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') && !iosIndex) {
+                    const safeModeName = (preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') ? ios5BucketName(mode.name) : mode.name;
                     const leafName = v.name.split('/').pop().trim();
                     // iOS4: Plain "On *" tokens (On Buy, On Negative, etc.) route to Common.
                     // iOS5: All keyword tokens route to their keyword bucket regardless of "On " prefix.
-                    const isPlainOnToken = preset !== 'iOS5' && preset !== 'iOS6' && leafName.startsWith('On ') && !leafName.endsWith(' Subtle');
+                    const isPlainOnToken = preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && leafName.startsWith('On ') && !leafName.endsWith(' Subtle');
                     let colorName = '';
                     if (finalValue && finalValue.includes('/')) {
                         const valParts = finalValue.replace(/[{}]/g, '').split('/');
@@ -2743,16 +2878,16 @@
                     }
                     // iOS5: Positive+Negative → RiseFall, Buy+Sell → BuySell (matches parent-child path)
                     // iOS4: Negative+Sell → RiseFall, Positive+Buy → BuySell (legacy)
-                    if ((preset === 'iOS5' || preset === 'iOS6') && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Negative'))) {
+                    if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Negative'))) {
                         if (dominantColors.Fall) colorName = dominantColors.Fall;
                         iosIndex = `RiseFall/Fall${colorName}/${safeModeName}`;
-                    } else if ((preset === 'iOS5' || preset === 'iOS6') && !isPlainOnToken && (v.name.includes('Buy') || v.name.includes('Sell'))) {
+                    } else if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') && !isPlainOnToken && (v.name.includes('Buy') || v.name.includes('Sell'))) {
                         if (dominantColors.Buy) colorName = dominantColors.Buy;
                         iosIndex = `BuySell/Buy${colorName}/${safeModeName}`;
-                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && !isPlainOnToken && (v.name.includes('Negative') || v.name.includes('Sell'))) {
+                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && !isPlainOnToken && (v.name.includes('Negative') || v.name.includes('Sell'))) {
                         if (dominantColors.Fall) colorName = dominantColors.Fall;
                         iosIndex = `RiseFall/Fall${colorName}/${safeModeName}`;
-                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Buy'))) {
+                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Buy'))) {
                         if (dominantColors.Buy) colorName = dominantColors.Buy;
                         iosIndex = `BuySell/Buy${colorName}/${safeModeName}`;
                     } else {
@@ -2760,11 +2895,20 @@
                     }
                 }
 
+                // iOS7: inject unique child suffix into bucket key second segment
+                if (preset === 'iOS7' && activeChildPairs[col.id] && iosIndex && !iosIndex.startsWith('Common/')) {
+                  const iosParts = iosIndex.split('/');
+                  if (iosParts.length >= 2) {
+                    iosParts[1] = iosParts[1] + activeChildPairs[col.id].uniqueSuffix;
+                    iosIndex = iosParts.join('/');
+                  }
+                }
+
                 hasSelected = true;
                 let targetStorage;
 
-                if ((preset === 'iOS2' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') && iosIndex) {
-                    const root = (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') ? colResult[col.name].$index : colResult[col.name];
+                if ((preset === 'iOS2' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') && iosIndex) {
+                    const root = (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') ? colResult[col.name].$index : colResult[col.name];
                     if (!root[iosIndex]) root[iosIndex] = {};
                     targetStorage = root[iosIndex];
                 } else {
@@ -2785,7 +2929,7 @@
                     "$type": v.type.toLowerCase(),
                     "$libraryName": currentFileName,
                     "$collectionName": col.name,
-                    "$value": preset === 'iOS6' ? shortenAlias(finalValue) : finalValue
+                    "$value": (preset === 'iOS6' || preset === 'iOS7') ? shortenAlias(finalValue, activeChildPairs[col.id] ? 3 : 2) : finalValue
                 };
 
                 if (exposeUnderlying && rawValue && rawValue.type === 'VARIABLE_ALIAS') {
@@ -2798,18 +2942,23 @@
                     }
                 }
 
-                if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6') varObj["$mode"] = mode.name;
-                if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && iosIndex) varObj["$index"] = iosIndex;
+                if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') varObj["$mode"] = mode.name;
+                if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && iosIndex) varObj["$index"] = iosIndex;
 
                 let current = targetStorage;
                 if (parts.length > 0) {
                     const rootGroup = parts[0].trim();
                     const fullGroupPath = parts.map(p => p.trim()).join('/');
-                    if (!current[rootGroup]) current[rootGroup] = {};
-                    if (fullGroupPath === rootGroup) current[rootGroup][varName] = varObj;
-                    else {
-                        if (!current[rootGroup][fullGroupPath]) current[rootGroup][fullGroupPath] = {};
-                        current[rootGroup][fullGroupPath][varName] = varObj;
+                    if (primitivesMode) {
+                        if (!current[fullGroupPath]) current[fullGroupPath] = {};
+                        current[fullGroupPath][varName] = varObj;
+                    } else {
+                        if (!current[rootGroup]) current[rootGroup] = {};
+                        if (fullGroupPath === rootGroup) current[rootGroup][varName] = varObj;
+                        else {
+                            if (!current[rootGroup][fullGroupPath]) current[rootGroup][fullGroupPath] = {};
+                            current[rootGroup][fullGroupPath][varName] = varObj;
+                        }
                     }
                 } else {
                     current[varName] = varObj;
@@ -2818,12 +2967,36 @@
           });
           
           if (preset !== 'iOS2' && preset !== 'iOS3' && Object.keys(modeData).length > 0) {
-              colResult[col.name].modes[mode.name] = modeData;
+              if (primitivesMode) {
+                  if (!colResult[col.name].Primitives) colResult[col.name].Primitives = {};
+                  Object.assign(colResult[col.name].Primitives, modeData);
+              } else {
+                  colResult[col.name].modes[mode.name] = modeData;
+              }
           }
         });
         
         return hasSelected ? colResult : null;
       }).filter(n => n !== null);
+
+      // Merge child collection $index buckets into parent's $index and remove child entry
+      for (const [childId] of Object.entries(activeChildPairs)) {
+        const childColName = collectionsData.find(c => c.id === childId)?.name;
+        const parentColName = activeChildPairs[childId].parentCol.name;
+        const parentIdx = results.findIndex(r => r[parentColName]);
+        const childIdx  = results.findIndex(r => r[childColName]);
+        if (parentIdx === -1 || childIdx === -1) continue;
+        const parentIndex = results[parentIdx][parentColName].$index;
+        const childIndex  = results[childIdx][childColName].$index;
+        if (parentIndex && childIndex) {
+          for (const [bucket, vars] of Object.entries(childIndex)) {
+            if (bucket.startsWith('Common/')) continue;
+            if (!parentIndex[bucket]) parentIndex[bucket] = {};
+            Object.assign(parentIndex[bucket], vars);
+          }
+        }
+        results.splice(childIdx, 1);
+      }
 
       results.push({ $knownCollections: globalKnowledge });
       return results;
