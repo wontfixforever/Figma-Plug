@@ -1209,7 +1209,8 @@
         <option value="iOS4">iOS4</option>
         <option value="iOS5">iOS5</option>
         <option value="iOS6">iOS6</option>
-        <option value="iOS7">iOS7</option> </select>
+        <option value="iOS7">iOS7</option>
+        <option value="iOS8">iOS8</option> </select>
 
     <button id="select-all">Select All</button>
     <button id="export-btn">Export JSON</button>
@@ -2648,12 +2649,23 @@
       };
 
       // iOS6: shorten alias paths to last 2 segments — {Primitive Colors/RATIO/Neutral/0} → {Neutral/0}
-      const shortenAlias = (val, keepSegments = 2) => {
+      const shortenAlias = (val, keepSegments = 2, commonPrefix = '') => {
         if (typeof val !== 'string') return val;
         if (!val.startsWith('{') || !val.endsWith('}')) return val;
         const inner = val.slice(1, -1);
         const parts = inner.split('/');
         if (parts.length <= 2) return val;
+        // iOS8 path: strip collection name (first segment) + common prefix segments
+        if (commonPrefix) {
+          const prefixParts = commonPrefix.split('/').filter(Boolean);
+          const afterCol = parts.slice(1);
+          let allMatch = afterCol.length > prefixParts.length;
+          for (let i = 0; i < prefixParts.length && allMatch; i++) {
+            if (afterCol[i] !== prefixParts[i]) allMatch = false;
+          }
+          const stripped = allMatch ? afterCol.slice(prefixParts.length) : afterCol;
+          return `{${stripped.join('/')}}`;
+        }
         const take = Math.min(keepSegments, parts.length - 1);
         return `{${parts.slice(-take).join('/')}}`;
       };
@@ -2681,16 +2693,18 @@
         }
       }
 
-      const results = collectionsData.map(col => {
+      const results = [];
+
+      for (const col of collectionsData) {
         const colResult = { 
             [col.name]: { 
                 $version: metaData
             } 
         };
 
-        if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7') {
+        if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8') {
             if (!primitivesMode) colResult[col.name].modes = {};
-        } else if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') {
+        } else if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
             colResult[col.name].$index = {};
         }
 
@@ -2711,6 +2725,36 @@
                     }
                     primitivesStripDepth = depth;
                 }
+            }
+        }
+
+        // iOS8: compute longest common segment-prefix across this child collection's
+        // alias values (after collection-name strip). Used to drop redundant brand
+        // prefixes like "RATIO/" while keeping meaningful subfolders like "Accessibility/".
+        let ios8AliasPrefix = '';
+        if (preset === 'iOS8' && activeChildPairs[col.id]) {
+            const aliasPaths = [];
+            col.variables.forEach(v => {
+                if (!selectedIds.includes(v.id)) return;
+                col.modes.forEach((mode, mIdx) => {
+                    const mhCheck = document.querySelector(`.mode-col-check[data-colid="${col.id}"][data-modeidx="${mIdx}"]`);
+                    if (mhCheck && !mhCheck.checked) return;
+                    const finalVal = getExportValue(v.valuesByMode[mode.modeId]);
+                    if (typeof finalVal === 'string' && finalVal.startsWith('{') && finalVal.endsWith('}')) {
+                        const parts = finalVal.slice(1, -1).split('/').slice(1);
+                        if (parts.length > 1) aliasPaths.push(parts);
+                    }
+                });
+            });
+            if (aliasPaths.length > 0) {
+                const minLen = Math.min(...aliasPaths.map(p => p.length));
+                let depth = 0;
+                for (let i = 0; i < minLen - 2; i++) {
+                    const seg = aliasPaths[0][i];
+                    if (aliasPaths.every(p => p[i] === seg)) depth = i + 1;
+                    else break;
+                }
+                ios8AliasPrefix = aliasPaths[0].slice(0, depth).join('/');
             }
         }
 
@@ -2738,8 +2782,8 @@
           }
 
           // --- iOS3 DOMINANT COLORS ---
-          const dominantColors = { Fall: "", Buy: "" };
-          if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') {
+          const dominantColors = { Fall: "", Buy: "", Yes: "" };
+          if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
               col.variables.forEach(v => {
                   if (!selectedIds.includes(v.id)) return;
                   
@@ -2757,6 +2801,7 @@
                   
                   if (v.name.includes("Negative")) dominantColors.Fall = colorName;
                   if (v.name.includes("Buy")) dominantColors.Buy = colorName;
+                  if (v.name.includes("Yes")) dominantColors.Yes = colorName;
               });
           }
 
@@ -2780,24 +2825,24 @@
                 }
 
                 let iosIndex = null;
-                const activePreset = ["iOS", "iOS2", "iOS3", "iOS4", "iOS5", "iOS6", "iOS7"].includes(preset);
+                const activePreset = ["iOS", "iOS2", "iOS3", "iOS4", "iOS5", "iOS6", "iOS7", "iOS8"].includes(preset);
                 
                 if (activePreset && parentId && allFamilyIds.length > 0) {
                     const parentValStr = String(getExportValue(v.valuesByMode[parentId]));
                     const allMatch = allFamilyIds.every(id => String(getExportValue(v.valuesByMode[id])) === parentValStr);
                     let safeModeName = mode.name.split(' ')[0]; // e.g. "Light"
                     let safeParentName = (collectionsData.find(c=>c.id===col.id).modes.find(m=>m.modeId===parentId).name).split(' ')[0]; // e.g. "Light"
-                    if (preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') {
+                    if (preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
                         safeModeName = ios5BucketName(mode.name);
                         safeParentName = ios5BucketName(collectionsData.find(c=>c.id===col.id).modes.find(m=>m.modeId===parentId).name);
                     }
 
                     // iOS5: keyword family membership trumps allMatch — entire families
                     // (Buy, Sell, Positive, Negative incl. "On" tokens) stay together.
-                    const keywords = ["Positive", "Negative", "Buy", "Sell"];
+                    const keywords = ["Positive", "Negative", "Buy", "Sell", "Yes", "No"];
                     const hasKeyword = keywords.some(kw => v.name.includes(kw));
 
-                    if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') && hasKeyword) {
+                    if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && hasKeyword) {
                         let colorName = "";
                         if (finalValue && finalValue.includes('/')) {
                             const valParts = finalValue.replace(/[{}]/g, '').split('/');
@@ -2811,6 +2856,13 @@
                             prefix = "BuySell";
                             groupName = "Buy";
                             if (dominantColors.Buy) colorName = dominantColors.Buy;
+                        } else if (v.name.includes("Yes") || v.name.includes("No")) {
+                            // Both Yes and No share the same set within YesNo/, mirroring
+                            // how Buy/Sell share BuySell/Buy* — downstream consumer requires
+                            // same-shape token list per folder
+                            prefix = "YesNo";
+                            groupName = "Yes";
+                            if (dominantColors.Yes) colorName = dominantColors.Yes;
                         }
                         iosIndex = `${prefix}/${groupName}${colorName}/${safeModeName}`;
                     } else if (allMatch) {
@@ -2825,7 +2877,7 @@
                         let groupName = "";
                         let prefix = "RiseFall";
 
-                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') {
+                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
                             if (v.name.includes("Positive") || v.name.includes("Negative")) {
                                 prefix = "RiseFall";
                                 groupName = "Fall";
@@ -2834,6 +2886,10 @@
                                 prefix = "BuySell";
                                 groupName = "Buy";
                                 if (dominantColors.Buy) colorName = dominantColors.Buy;
+                            } else if (v.name.includes("Yes") || v.name.includes("No")) {
+                                prefix = "YesNo";
+                                groupName = "Yes";
+                                if (dominantColors.Yes) colorName = dominantColors.Yes;
                             }
 
                             // If it has a keyword, route it to the specific bucket
@@ -2863,7 +2919,7 @@
                     // Deduplication logic: If a child mode's value is the exact same as the parent's value,
                     // AND it belongs in Common, skip exporting it to prevent duplicates in the JSON.
                     if (isChild) {
-                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') {
+                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
                             if (String(finalValue) === parentValStr && iosIndex && iosIndex.startsWith("Common/")) return;
                         }
                         else {
@@ -2873,12 +2929,12 @@
                 }
 
                 // --- iOS4/iOS5 FALLBACK: name-based bucketing when no parent/child configured ---
-                if ((preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') && !iosIndex) {
-                    const safeModeName = (preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') ? ios5BucketName(mode.name) : mode.name;
+                if ((preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !iosIndex) {
+                    const safeModeName = (preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') ? ios5BucketName(mode.name) : mode.name;
                     const leafName = v.name.split('/').pop().trim();
                     // iOS4: Plain "On *" tokens (On Buy, On Negative, etc.) route to Common.
                     // iOS5: All keyword tokens route to their keyword bucket regardless of "On " prefix.
-                    const isPlainOnToken = preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && leafName.startsWith('On ') && !leafName.endsWith(' Subtle');
+                    const isPlainOnToken = preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && leafName.startsWith('On ') && !leafName.endsWith(' Subtle');
                     let colorName = '';
                     if (finalValue && finalValue.includes('/')) {
                         const valParts = finalValue.replace(/[{}]/g, '').split('/');
@@ -2886,16 +2942,19 @@
                     }
                     // iOS5: Positive+Negative → RiseFall, Buy+Sell → BuySell (matches parent-child path)
                     // iOS4: Negative+Sell → RiseFall, Positive+Buy → BuySell (legacy)
-                    if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Negative'))) {
+                    if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Negative'))) {
                         if (dominantColors.Fall) colorName = dominantColors.Fall;
                         iosIndex = `RiseFall/Fall${colorName}/${safeModeName}`;
-                    } else if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') && !isPlainOnToken && (v.name.includes('Buy') || v.name.includes('Sell'))) {
+                    } else if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Buy') || v.name.includes('Sell'))) {
                         if (dominantColors.Buy) colorName = dominantColors.Buy;
                         iosIndex = `BuySell/Buy${colorName}/${safeModeName}`;
-                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && !isPlainOnToken && (v.name.includes('Negative') || v.name.includes('Sell'))) {
+                    } else if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Yes') || v.name.includes('No'))) {
+                        if (dominantColors.Yes) colorName = dominantColors.Yes;
+                        iosIndex = `YesNo/Yes${colorName}/${safeModeName}`;
+                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && !isPlainOnToken && (v.name.includes('Negative') || v.name.includes('Sell'))) {
                         if (dominantColors.Fall) colorName = dominantColors.Fall;
                         iosIndex = `RiseFall/Fall${colorName}/${safeModeName}`;
-                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Buy'))) {
+                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Buy'))) {
                         if (dominantColors.Buy) colorName = dominantColors.Buy;
                         iosIndex = `BuySell/Buy${colorName}/${safeModeName}`;
                     } else {
@@ -2903,8 +2962,8 @@
                     }
                 }
 
-                // iOS7: inject unique child suffix into bucket key second segment
-                if (preset === 'iOS7' && activeChildPairs[col.id] && iosIndex && !iosIndex.startsWith('Common/')) {
+                // iOS7/iOS8: inject unique child suffix into bucket key second segment
+                if ((preset === 'iOS7' || preset === 'iOS8') && activeChildPairs[col.id] && iosIndex && !iosIndex.startsWith('Common/')) {
                   const iosParts = iosIndex.split('/');
                   if (iosParts.length >= 2) {
                     iosParts[1] = iosParts[1] + activeChildPairs[col.id].uniqueSuffix;
@@ -2915,8 +2974,8 @@
                 hasSelected = true;
                 let targetStorage;
 
-                if ((preset === 'iOS2' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') && iosIndex) {
-                    const root = (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') ? colResult[col.name].$index : colResult[col.name];
+                if ((preset === 'iOS2' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && iosIndex) {
+                    const root = (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') ? colResult[col.name].$index : colResult[col.name];
                     if (!root[iosIndex]) root[iosIndex] = {};
                     targetStorage = root[iosIndex];
                 } else {
@@ -2937,7 +2996,7 @@
                     "$type": v.type.toLowerCase(),
                     "$libraryName": currentFileName,
                     "$collectionName": col.name,
-                    "$value": (preset === 'iOS6' || preset === 'iOS7') ? shortenAlias(finalValue, activeChildPairs[col.id] ? 3 : 2) : finalValue
+                    "$value": (preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') ? (preset === 'iOS8' && activeChildPairs[col.id] && ios8AliasPrefix ? shortenAlias(finalValue, 0, ios8AliasPrefix) : shortenAlias(finalValue, activeChildPairs[col.id] ? 3 : 2)) : finalValue
                 };
 
                 if (exposeUnderlying && rawValue && rawValue.type === 'VARIABLE_ALIAS') {
@@ -2950,8 +3009,8 @@
                     }
                 }
 
-                if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7') varObj["$mode"] = mode.name;
-                if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && iosIndex) varObj["$index"] = iosIndex;
+                if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') varObj["$mode"] = mode.name;
+                if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && iosIndex) varObj["$index"] = iosIndex;
 
                 let current = targetStorage;
                 if (parts.length > 0) {
@@ -2984,8 +3043,8 @@
           }
         });
         
-        return hasSelected ? colResult : null;
-      }).filter(n => n !== null);
+        if (hasSelected) results.push(colResult);
+      }
 
       // Merge child collection $index buckets into parent's $index and remove child entry
       for (const [childId] of Object.entries(activeChildPairs)) {
@@ -2998,6 +3057,9 @@
         const childIndex  = results[childIdx][childColName].$index;
         if (parentIndex && childIndex) {
           for (const [bucket, vars] of Object.entries(childIndex)) {
+            // Skip Common — child collection's non-keyword tokens (Surface, Background, etc.)
+            // either dedupe vs parent or aren't part of the merged output. Yes/No and other
+            // semantic groups land in their own named buckets and merge through normally.
             if (bucket.startsWith('Common/')) continue;
             if (!parentIndex[bucket]) parentIndex[bucket] = {};
             Object.assign(parentIndex[bucket], vars);
