@@ -716,7 +716,7 @@
       transition: background 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
     }
 
-    #export-btn {
+    #export-btn, #select-all, #export-preset {
       background: rgba(255,255,255,0.10); color: #fff;
       border: 1px solid rgba(170,170,170,0.30);
       border-radius: 125px; position: relative; overflow: visible;
@@ -727,11 +727,23 @@
         inset 0 1px 2px rgba(255,255,255,0.125);
       transition: all 0.15s ease;
     }
+    #select-all { flex: 0 0 96px; }
+    #export-preset {
+      height: 30px; font-size: 11px; font-weight: 600; letter-spacing: 0.01em;
+      padding: 0 28px 0 14px; margin-right: 8px; cursor: pointer;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 10px 6px;
+      background-color: rgba(255,255,255,0.10);
+    }
+    #export-preset option { background: #1a1a1a; color: #fff; }
     /* Glow handled via multi-stop box-shadow on hover — no pseudo-element bleed */
     @keyframes hue-spin {
       to { filter: hue-rotate(360deg); }
     }
-    #export-btn::after {
+    #export-btn::after, #select-all::after {
       content: ''; position: absolute; inset: -1px; border-radius: 125px;
       background: conic-gradient(
         rgba(255,58,58,1),
@@ -748,8 +760,8 @@
       opacity: 0; transition: opacity 0.15s ease;
       z-index: 1; pointer-events: none;
     }
-    #export-btn:hover {
-      background: rgba(255,255,255,0.10);
+    #export-btn:hover, #select-all:hover, #export-preset:hover, #export-preset:focus {
+      background-color: rgba(255,255,255,0.10);
       border-color: transparent;
       box-shadow:
         -6px -2px 10px -4px rgba(255,58,58,0.35),
@@ -760,17 +772,13 @@
         3px 4px 10px -4px rgba(127,58,255,0.35),
         -3px 4px 10px -4px rgba(200,58,255,0.30),
         -6px 2px 10px -4px rgba(255,58,120,0.30);
+      outline: none;
     }
-    #export-btn:hover::after {
+    #export-btn:hover::after, #select-all:hover::after {
       opacity: 1;
       animation: hue-spin 2s linear infinite;
     }
-    #export-btn:active { opacity: 0.85; }
-
-    #select-all {
-      background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border: 1px solid var(--btn-secondary-border); flex: 0 0 96px;
-    }
-    #select-all:hover { background: var(--icon-btn-hover); border-color: #A8B8D0; }
+    #export-btn:active, #select-all:active, #export-preset:active { opacity: 0.85; }
 
     #export-csv-btn {
       background: rgba(255,255,255,0.10); color: #fff;
@@ -1193,7 +1201,7 @@
       <span>Primitives</span>
     </label>
 
-    <select id="export-preset" style="margin-right: 8px; height: 32px; border-radius: 6px; border: 1px solid #eee; font-size: 12px; padding: 0 8px; cursor: pointer;">
+    <select id="export-preset">
      <option value="Default">Default</option>
         <option value="iOS">iOS</option>
         <option value="iOS2">iOS2</option>
