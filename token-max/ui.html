@@ -2809,11 +2809,16 @@
           
           col.variables.forEach(v => {
              if (selectedIds.includes(v.id)) {
-                // All presets: skip child vars that are identical to their linked parent collection
+                // All presets: skip child vars that are identical to their linked parent collection.
+                // EXCEPT "On *" foreground tokens (On Buy, On Buy Inverse, On Sell, On Sell Inverse, …):
+                // the downstream consumer requires the full token set per bucket even when the
+                // accessibility value equals the base color, so keep them regardless of identity.
                 if (activeChildPairs[col.id]) {
+                  const onLeafName = v.name.split('/').pop().trim();
+                  const isOnToken = onLeafName.startsWith('On ');
                   const { parentCol } = activeChildPairs[col.id];
                   const parentVar = parentCol.variables.find(pv => pv.name === v.name);
-                  if (parentVar && isIdenticalToParent(v, parentVar, col, parentCol)) return;
+                  if (!isOnToken && parentVar && isIdenticalToParent(v, parentVar, col, parentCol)) return;
                 }
 
                 const rawValue = v.valuesByMode[mode.modeId];
