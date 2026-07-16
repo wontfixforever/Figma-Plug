@@ -1,4 +1,4 @@
-figma.showUI(__html__, { width: 800, height: 600 });
+figma.showUI(__html__, { width: 1280, height: 600 });
 
 // 1. Refactor logic into a reusable function
 async function loadVariables() {
@@ -160,7 +160,7 @@ figma.ui.onmessage = async (msg) => {
 
   if (msg.type === 'get-theme') {
     const theme = await figma.clientStorage.getAsync('tokenmax-theme');
-    figma.ui.postMessage({ type: 'load-theme', theme: theme || 'dark' });
+    figma.ui.postMessage({ type: 'load-theme', theme: theme || 'light' });
   }
 
   if (msg.type === 'set-theme') {
