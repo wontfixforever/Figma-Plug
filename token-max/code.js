@@ -3,10 +3,43 @@ figma.showUI(__html__, { width: 1280, height: 600 });
 // 1. Refactor logic into a reusable function
 async function loadVariables() {
   try {
-    const collections = figma.variables.getLocalVariableCollections();
+    const collections = await figma.variables.getLocalVariableCollectionsAsync();
 
-    const localVariables = figma.variables.getLocalVariables();
+    const localVariables = await figma.variables.getLocalVariablesAsync();
     const fileName = figma.root.name;
+
+    // Lookup + resolver for extended (extension) collections. Some Figma versions expose the
+    // ExtendedVariableCollection metadata (isExtension / variableOverrides / parentVariableCollectionId
+    // / modes[].parentModeId) but NOT Variable.getValuesByModeForCollectionAsync — so we rebuild
+    // each extension-mode value ourselves: this level's override if present, else walk up the
+    // parent chain (by parentModeId, or by mode name/index if that isn't exposed) to the base
+    // variable's own valuesByMode.
+    const collectionById = {};
+    collections.forEach(c => { collectionById[c.id] = c; });
+
+    const resolveExtendedRaw = (v, startCol, startModeId) => {
+      let col = startCol;
+      let modeId = startModeId;
+      let guard = 0;
+      while (col && guard++ < 20) {
+        const ov = col.variableOverrides && col.variableOverrides[v.id];
+        if (ov && Object.prototype.hasOwnProperty.call(ov, modeId)) return ov[modeId];
+        const parentCol = col.parentVariableCollectionId ? collectionById[col.parentVariableCollectionId] : null;
+        if (!parentCol) break;
+        const modeIdx = (col.modes || []).findIndex(m => m.modeId === modeId);
+        const mode = modeIdx >= 0 ? col.modes[modeIdx] : null;
+        let parentModeId = mode && mode.parentModeId;
+        if (!parentModeId) {
+          const pModes = parentCol.modes || [];
+          const byName = mode && pModes.find(pm => pm.name === mode.name);
+          parentModeId = byName ? byName.modeId : (pModes[modeIdx] ? pModes[modeIdx].modeId : (pModes[0] && pModes[0].modeId));
+        }
+        if (!parentModeId) break;
+        col = parentCol;
+        modeId = parentModeId;
+      }
+      return v.valuesByMode ? v.valuesByMode[modeId] : undefined;
+    };
 
     const variableMap = {};
 
@@ -38,6 +71,29 @@ async function loadVariables() {
       }
     }
 
+    // Catalog alias targets referenced ONLY by extension overrides (they don't appear in any
+    // base variable's valuesByMode), so aliasMap/export can name them instead of "unknown".
+    for (const collection of collections) {
+      if (!collection.isExtension || !collection.variableOverrides) continue;
+      for (const ovVarId in collection.variableOverrides) {
+        const modeVals = collection.variableOverrides[ovVarId];
+        for (const mId in modeVals) {
+          const value = modeVals[mId];
+          if (value && value.type === 'VARIABLE_ALIAS' && !variableMap[value.id]) {
+            try {
+              const av = await figma.variables.getVariableByIdAsync(value.id);
+              if (av) {
+                const ac = await figma.variables.getVariableCollectionByIdAsync(av.variableCollectionId);
+                variableMap[value.id] = `${ac ? ac.name : 'Library'}/${av.name}`;
+              }
+            } catch (e) {
+              console.warn("Could not resolve extension-override alias:", value.id);
+            }
+          }
+        }
+      }
+    }
+
     // Prep data for UI
     const dataForUi = await Promise.all(collections.map(async (collection) => {
       const processedVars = await Promise.all(collection.variableIds.map(async (varId) => {
@@ -45,11 +101,27 @@ async function loadVariables() {
           const v = localVariables.find(variable => variable.id === varId);
           if (!v) return null;
 
+          // A variable's own valuesByMode is keyed by its DEFINING collection's modeIds. For an
+          // extension that's the parent's modeIds, so cells keyed by the extension's own modes
+          // come back empty — rebuild them below via resolveExtendedRaw.
+          let effectiveValues = v.valuesByMode;
+          const overriddenByMode = {};
+          if (collection.isExtension) {
+            // Extension variables inherit the parent's modeIds; rebuild values keyed by THIS
+            // collection's modes (override at this level, else inherited up the parent chain).
+            effectiveValues = {};
+            const overrides = (collection.variableOverrides && collection.variableOverrides[v.id]) || {};
+            collection.modes.forEach(m => {
+              overriddenByMode[m.modeId] = Object.prototype.hasOwnProperty.call(overrides, m.modeId);
+              effectiveValues[m.modeId] = resolveExtendedRaw(v, collection, m.modeId);
+            });
+          }
+
           // Helper function to resolve color values
           const resolveColorForMode = async (modeIdx) => {
             if (v.resolvedType !== 'COLOR' || !collection.modes[modeIdx]) return null;
             
-            let currentVal = v.valuesByMode[collection.modes[modeIdx].modeId];
+            let currentVal = effectiveValues[collection.modes[modeIdx].modeId];
             let depth = 0; 
             
             while (currentVal && currentVal.type === 'VARIABLE_ALIAS' && depth < 5) {
@@ -83,7 +155,7 @@ async function loadVariables() {
           } else if (v.resolvedType === 'FLOAT') {
             for (let i = 0; i < collection.modes.length; i++) {
               const mId = collection.modes[i].modeId;
-              let currentVal = v.valuesByMode[mId];
+              let currentVal = effectiveValues[mId];
               if (currentVal && currentVal.type === 'VARIABLE_ALIAS') {
                 let depth = 0;
                 while (currentVal && currentVal.type === 'VARIABLE_ALIAS' && depth < 5) {
@@ -106,10 +178,11 @@ async function loadVariables() {
             id: v.id,
             name: v.name,
             type: v.resolvedType,
-            valuesByMode: v.valuesByMode,
+            valuesByMode: effectiveValues,
             scopes: v.scopes,
-            resolvedValuesByMode: resolvedValues, 
-            hidden: v.hiddenFromPublishing || false 
+            resolvedValuesByMode: resolvedValues,
+            overriddenByMode: overriddenByMode,
+            hidden: v.hiddenFromPublishing || false
           };
           
         } catch (varErr) {
@@ -122,7 +195,9 @@ async function loadVariables() {
         id: collection.id,
         name: collection.name,
         modes: collection.modes,
-        variables: processedVars.filter(v => v !== null) 
+        isExtension: collection.isExtension || false,
+        parentId: collection.isExtension ? collection.parentVariableCollectionId : null,
+        variables: processedVars.filter(v => v !== null)
       };
     }));
 

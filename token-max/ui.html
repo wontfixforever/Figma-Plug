@@ -361,14 +361,28 @@
 
     /* ── Collections table (RePath-style grid) ── */
     .collection {
+      --nest: 0;   /* nesting depth for extended collections; set inline in render() */
       margin-bottom: 8px; background: var(--bg-page);
       border: 1px solid var(--border-subtle); border-radius: 8px;
       /* clip (not hidden) so rounded corners are respected WITHOUT creating a scroll
          container — lets the sticky name column pin to the tab-content scroller. */
       overflow: clip;
       /* Extend to the full width of the widest row; never narrower than the panel.
-         Wider-than-viewport collections overflow the tab, which scrolls horizontally. */
-      width: max-content; min-width: 100%; box-sizing: border-box;
+         Wider-than-viewport collections overflow the tab, which scrolls horizontally.
+         Extended collections nest under their parent: indent the block and shrink its
+         min-width to match so nesting doesn't force extra horizontal scroll. */
+      width: max-content; min-width: calc(100% - var(--nest) * 24px); box-sizing: border-box;
+      margin-left: calc(var(--nest) * 24px);
+    }
+    /* Sticky name/folder columns pin at the scroller's true left edge (left:0, from the base
+       rules) so horizontally-scrolled cells are fully masked — no bleed through the indent gap.
+       The nesting indent still reads at rest via the block's margin-left. */
+    /* Extended (extension) collection: subtle left accent + an "extends parent" hint. */
+    .collection.is-ext { border-left: 2px solid var(--border-medium); }
+    .ext-badge {
+      flex: 0 0 auto; font-family: var(--font-sans); font-size: 9px; font-weight: 600;
+      letter-spacing: 0.02em; color: var(--text-tertiary); text-transform: none;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
     }
     /* Selected collection (col-check checked) → solid black border, expanded or collapsed */
     .collection:has(.col-check:checked) { border-color: var(--text-primary); }
@@ -429,17 +443,6 @@
     }
     /* Only the top-level (collection) caret rotates; folder carets stay static. */
     .col-chevron.open { transform: rotate(90deg); }
-    /* Small ghost link button in the collection header */
-    .connect-btn {
-      flex: 0 0 auto; width: 20px; height: 20px; padding: 0;
-      display: inline-flex; align-items: center; justify-content: center;
-      background: none; border: none; border-radius: 4px;
-      color: var(--text-tertiary); cursor: pointer;
-      transition: background 0.12s ease, color 0.12s ease;
-    }
-    .connect-btn:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
-    .connect-btn.linked { color: var(--brand); }
-    .connect-dropdown { font-size: 10px; }
 
     /* Folder rows */
     .folder-row { background: var(--bg-page); }
@@ -479,6 +482,13 @@
       color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
     }
     .val-text.muted { color: var(--text-tertiary); }
+    /* Inherited (non-overridden) value in an extended collection: shown but dimmed. */
+    .cell.inherited { opacity: 0.5; }
+    /* Overridden ("extended") value: highlighted blue to contrast the dimmed inherited ones. */
+    .cell.overridden .val-text,
+    .cell.overridden .alias-path,
+    .cell.overridden .alias-link { color: #2563eb; }
+    .cell.overridden .val-text { font-weight: 500; }
     .val-copy { cursor: pointer; }
     .swatch {
       flex: 0 0 auto; width: 14px; height: 14px; border-radius: 3px; position: relative;
@@ -605,28 +615,6 @@
     .diff-table .col-check-th { width: 28px; padding: 8px 4px; text-align: center; }
     .diff-row td.col-check-td { width: 28px; padding: 8px 4px; text-align: center; vertical-align: middle; }
     .change-check { width: 14px; height: 14px; cursor: pointer; margin: 0; display: inline-block; }
-
-    /* ── Collection Link Button ── */
-    .col-header:not(:has(.col-check:checked)) .connect-btn { display: none; }
-    .connect-btn.linked {
-      background: var(--navy) !important;
-      border-color: var(--navy) !important;
-      color: #fff;
-    }
-    .connect-dropdown {
-      display: none;
-      margin-left: 8px;
-      height: 24px;
-      font-size: 10px;
-      border: 1px solid var(--btn-secondary-border);
-      border-radius: 4px;
-      background: var(--select-bg);
-      color: var(--select-text);
-      padding: 0 4px;
-      cursor: pointer;
-      max-width: 160px;
-      flex-shrink: 0;
-    }
 
     /* ── Child / Parent Mode Controls ── */
     .child-toggle {
@@ -973,9 +961,6 @@
     // NEW: Track Parent assignments { "colId|childModeId": "parentModeId" }
     let parentAssignments = {};
 
-    // Collection-level parent-child links { childColId: parentColId } — cleared on col uncheck
-    let collectionParents = {};
-
     // Table expand/collapse state (persist across renders). Collections default collapsed; folders default expanded.
     let expandedCols = new Set();
     let collapsedFolders = new Set();
@@ -1202,6 +1187,9 @@
       const mode = col.modes[modeIdx];
       const rawValue = v.valuesByMode ? v.valuesByMode[mode.modeId] : undefined;
       const resolved = v.resolvedValuesByMode ? v.resolvedValuesByMode[mode.modeId] : undefined;
+      // In an extended collection, a mode with no override shows the inherited value, dimmed.
+      const isInherited = col.isExtension && v.overriddenByMode && !v.overriddenByMode[mode.modeId];
+      const isOverridden = col.isExtension && v.overriddenByMode && v.overriddenByMode[mode.modeId];
       let inner;
       const isAlias = rawValue && rawValue.type === 'VARIABLE_ALIAS';
       if (isAlias && valueDisplayMode === 'alias') {
@@ -1236,7 +1224,7 @@
         const txt = formatCellValue(valForText, v.type, resolved);
         inner = (txt === '') ? '<span class="val-text muted">—</span>' : '<span class="val-text">' + txt + '</span>';
       }
-      return '<div class="cell mode-idx-' + modeIdx + '">' + inner + '</div>';
+      return '<div class="cell mode-idx-' + modeIdx + (isInherited ? ' inherited' : (isOverridden ? ' overridden' : '')) + '">' + inner + '</div>';
     }
 
     function typeTagFor(v) {
@@ -1311,13 +1299,35 @@
     function render() {
       const treeContainer = document.getElementById('tree');
       const includeHidden = document.getElementById('show-hidden-toggle').checked;
-      const savedVarIds = Array.from(document.querySelectorAll('.var-check:checked')).map(function(c){ return c.value; });
+      const savedVarIds = Array.from(document.querySelectorAll('.var-check:checked')).map(function(c){ return c.dataset.colid + '|' + c.value; });
       const savedModeStates = Array.from(document.querySelectorAll('.mode-col-check')).map(function(c){ return { key: c.dataset.colid + '-' + c.dataset.modeidx, checked: c.checked }; });
 
       hideAliasTooltip();
       treeContainer.innerHTML = '';
 
-      collectionsData.forEach(function(col){
+      // Order collections so each extended collection is nested directly under its parent
+      // (depth drives the indent). Roots keep their original API order; so do siblings.
+      const colById = {};
+      collectionsData.forEach(function(c){ colById[c.id] = c; });
+      const extChildrenOf = {};
+      const rootCols = [];
+      collectionsData.forEach(function(c){
+        if (c.isExtension && c.parentId && colById[c.parentId]) {
+          (extChildrenOf[c.parentId] = extChildrenOf[c.parentId] || []).push(c);
+        } else {
+          rootCols.push(c);
+        }
+      });
+      const orderedCols = [];
+      function walkCol(c, depth){
+        orderedCols.push({ col: c, depth: depth });
+        (extChildrenOf[c.id] || []).forEach(function(ch){ walkCol(ch, depth + 1); });
+      }
+      rootCols.forEach(function(r){ walkCol(r, 0); });
+
+      orderedCols.forEach(function(entry){
+        const col = entry.col;
+        const depth = entry.depth;
         const filteredVariables = includeHidden ? col.variables : col.variables.filter(function(v){ return !v.hidden; });
         if (filteredVariables.length === 0) return;
         const colTree = buildTree(filteredVariables);
@@ -1327,17 +1337,18 @@
         const out = [];
         emitRows(colTree, col.id, col, tpl, 0, '', out);
 
+        const parentName = (col.isExtension && colById[col.parentId]) ? colById[col.parentId].name : '';
         const colEl = document.createElement('div');
-        colEl.className = 'collection' + (colExpanded ? '' : ' collapsed');
+        colEl.className = 'collection' + (colExpanded ? '' : ' collapsed') + (col.isExtension ? ' is-ext' : '');
+        if (depth > 0) colEl.style.setProperty('--nest', depth);
         colEl.innerHTML =
           '<div class="vtable">'
           + '<div class="head-row row" style="grid-template-columns:' + tpl + '">'
           + '<div class="name-cell">'
           + '<span class="chevron col-chevron' + (colExpanded ? ' open' : '') + '" onclick="toggleCollection(\'' + col.id + '\'); event.stopPropagation();">›</span>'
-          + '<input type="checkbox" class="col-check" data-id="' + col.id + '" onclick="event.stopPropagation(); if(!this.checked) clearCollectionParent(\'' + col.id + '\')">'
+          + '<input type="checkbox" class="col-check" data-id="' + col.id + '" onclick="event.stopPropagation();">'
           + '<span class="col-name" style="cursor:pointer" onclick="toggleCollection(\'' + col.id + '\'); event.stopPropagation();">' + col.name + '</span>'
-          + '<button class="connect-btn ' + (collectionParents[col.id] ? 'linked' : '') + '" data-colid="' + col.id + '" onclick="toggleConnectDropdown(\'' + col.id + '\', event)" title="' + (collectionParents[col.id] ? 'Linked to parent' : 'Link to parent collection') + '"><i data-lucide="link-2" style="width:12px;height:12px;"></i></button>'
-          + '<select class="connect-dropdown" id="connect-dd-' + col.id + '" onchange="setCollectionParent(\'' + col.id + '\', this.value, event)" onclick="event.stopPropagation()"></select>'
+          + (col.isExtension ? '<span class="ext-badge" title="Extends ' + escAttr(parentName) + '">↳ ' + escAttr(parentName || 'extension') + '</span>' : '')
           + '</div>'
           + modeHeads
           + '</div>'
@@ -1348,7 +1359,7 @@
 
       // Restore variable selection
       treeContainer.querySelectorAll('.var-check').forEach(function(ck){
-        if (savedVarIds.includes(ck.value)) ck.checked = true;
+        if (savedVarIds.includes(ck.dataset.colid + '|' + ck.value)) ck.checked = true;
         ck.onchange = function(e){ refreshHighlights(e.target.closest('.var-item')); syncParentCheckboxes(e.target); updateExportButtonState(); };
       });
       // Collection master checkbox
@@ -2149,8 +2160,11 @@
     }
 
     function performExport(tags) {
-      const selectedIds = Array.from(document.querySelectorAll('.var-check:checked')).map(c => c.value);
-      if (selectedIds.length === 0) return alert("Select variables first.");
+      // Selection is keyed by collection+variable (colid|varid), NOT by variable id alone.
+      // Extended collections inherit their parent's variable ids, so a bare-id check would
+      // re-include an unchecked extension whenever its parent is selected.
+      const selectedKeys = new Set(Array.from(document.querySelectorAll('.var-check:checked')).map(c => c.dataset.colid + '|' + c.value));
+      if (selectedKeys.size === 0) return alert("Select variables first.");
 
       const preset = document.getElementById('export-preset').value;
       const primitivesChecked = document.getElementById('primitives-toggle').checked;
@@ -2183,7 +2197,7 @@
       };
       if (tags.length > 0) metaData.tags = tags;
 
-      const jsonOutput = formatJson(selectedIds, metaData, preset);
+      const jsonOutput = formatJson(selectedKeys, metaData, preset);
 
       triggerDownload(JSON.stringify(jsonOutput, null, 2), `${exportName}.json`, 'application/json');
     }
@@ -2399,56 +2413,10 @@
       triggerDownload(JSON.stringify(output, null, 2), exportFilename, 'application/json');
     };
 
-    // ── Collection link functions ──
-
-    function toggleConnectDropdown(colId, event) {
-      event.stopPropagation();
-      const dd = document.getElementById('connect-dd-' + colId);
-      if (!dd) return;
-      if (dd.style.display === 'block') {
-        dd.style.display = 'none';
-        return;
-      }
-      // Populate options
-      const includeHidden = document.getElementById('show-hidden-toggle').checked;
-      dd.innerHTML = '<option value="">No parent</option>';
-      collectionsData.forEach(c => {
-        if (c.id === colId) return;
-        const allHidden = c.variables.every(v => v.hidden);
-        if (!includeHidden && allHidden) return;
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        if (collectionParents[colId] === c.id) opt.selected = true;
-        dd.appendChild(opt);
-      });
-      dd.style.display = 'block';
-      dd.focus();
-    }
-
-    function setCollectionParent(childId, parentId, event) {
-      event.stopPropagation();
-      if (parentId === '') {
-        delete collectionParents[childId];
-      } else {
-        collectionParents[childId] = parentId;
-      }
-      // Update button linked state
-      const btn = document.querySelector(`.connect-btn[data-colid="${childId}"]`);
-      if (btn) btn.classList.toggle('linked', !!collectionParents[childId]);
-      // Hide dropdown
-      const dd = document.getElementById('connect-dd-' + childId);
-      if (dd) dd.style.display = 'none';
-      lucide.createIcons();
-    }
-
-    function clearCollectionParent(colId) {
-      delete collectionParents[colId];
-      const btn = document.querySelector(`.connect-btn[data-colid="${colId}"]`);
-      if (btn) btn.classList.remove('linked');
-      const dd = document.getElementById('connect-dd-' + colId);
-      if (dd) dd.style.display = 'none';
-    }
+    // ── (Removed) Manual collection-link functions ──
+    // Parent/child collection relationships now come from Figma NATIVE extended collections
+    // (col.isExtension + col.parentId), surfaced by code.js. Nesting is handled in render()
+    // and export merge/dedup in formatJson via activeChildPairs. No manual linking UI.
 
     // iOS5 helper: normalize mode name for bucket keys (Light/Dark)
     function ios5BucketName(modeName) {
@@ -2480,7 +2448,7 @@
       return sharedModes > 0;
     }
 
-    function formatJson(selectedIds, metaData, preset = "Default") {
+    function formatJson(selectedKeys, metaData, preset = "Default") {
       const exposeUnderlying = document.getElementById('expose-underlying-toggle').checked;
       const primitivesMode = document.getElementById('primitives-toggle').checked;
 
@@ -2522,17 +2490,23 @@
 
       // Build active collection parent-child pairs for this export
       const exportingColIds = new Set(
-        collectionsData.filter(c => c.variables.some(v => selectedIds.includes(v.id))).map(c => c.id)
+        collectionsData.filter(c => c.variables.some(v => selectedKeys.has(c.id + '|' + v.id))).map(c => c.id)
       );
+      // Parent→child pairs come from Figma NATIVE extended collections (col.isExtension +
+      // col.parentId). A pair is active only when BOTH the extension and its parent are in
+      // this export. Shape is unchanged, so all downstream preset logic works as before.
       const activeChildPairs = {};
-      for (const [childId, parentId] of Object.entries(collectionParents)) {
-        if (exportingColIds.has(childId) && exportingColIds.has(parentId)) {
+      for (const childCol of collectionsData) {
+        if (!childCol.isExtension || !childCol.parentId) continue;
+        const parentId = childCol.parentId;
+        if (exportingColIds.has(childCol.id) && exportingColIds.has(parentId)) {
           const parentCol = collectionsData.find(c => c.id === parentId);
-          const childCol  = collectionsData.find(c => c.id === childId);
-          activeChildPairs[childId] = {
-            parentCol,
-            uniqueSuffix: extractUniqueSuffix(parentCol.name, childCol.name)
-          };
+          if (parentCol) {
+            activeChildPairs[childCol.id] = {
+              parentCol,
+              uniqueSuffix: extractUniqueSuffix(parentCol.name, childCol.name)
+            };
+          }
         }
       }
 
@@ -2556,7 +2530,7 @@
         // Primitives mode: compute the longest common folder prefix across selected variables
         let primitivesStripDepth = 0;
         if (primitivesMode) {
-            const selectedVars = col.variables.filter(v => selectedIds.includes(v.id));
+            const selectedVars = col.variables.filter(v => selectedKeys.has(col.id + '|' + v.id));
             if (selectedVars.length > 0) {
                 const allParts = selectedVars.map(v => v.name.split('/').slice(0, -1));
                 if (allParts.length > 0 && allParts[0].length > 0) {
@@ -2578,7 +2552,7 @@
         if (preset === 'iOS8' && activeChildPairs[col.id]) {
             const aliasPaths = [];
             col.variables.forEach(v => {
-                if (!selectedIds.includes(v.id)) return;
+                if (!selectedKeys.has(col.id + '|' + v.id)) return;
                 col.modes.forEach((mode, mIdx) => {
                     const mhCheck = document.querySelector(`.mode-col-check[data-colid="${col.id}"][data-modeidx="${mIdx}"]`);
                     if (mhCheck && !mhCheck.checked) return;
@@ -2628,7 +2602,7 @@
           const dominantColors = { Fall: "", Buy: "", Yes: "" };
           if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
               col.variables.forEach(v => {
-                  if (!selectedIds.includes(v.id)) return;
+                  if (!selectedKeys.has(col.id + '|' + v.id)) return;
                   
                   const baseName = v.name.split('/').pop().trim();
                   if (baseName.startsWith("On ")) return;
@@ -2651,7 +2625,7 @@
           const modeData = {};
           
           col.variables.forEach(v => {
-             if (selectedIds.includes(v.id)) {
+             if (selectedKeys.has(col.id + '|' + v.id)) {
                 // All presets: skip child vars that are identical to their linked parent collection.
                 // EXCEPT "On *" foreground tokens (On Buy, On Buy Inverse, On Sell, On Sell Inverse, …):
                 // the downstream consumer requires the full token set per bucket even when the
@@ -2783,6 +2757,13 @@
                     // iOS4: Plain "On *" tokens (On Buy, On Negative, etc.) route to Common.
                     // iOS5: All keyword tokens route to their keyword bucket regardless of "On " prefix.
                     const isPlainOnToken = preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && leafName.startsWith('On ') && !leafName.endsWith(' Subtle');
+                    // Accessibility is now a MODE (e.g. "Accessibility Light") rather than a linked
+                    // child collection. ios5BucketName() folds it to Light/Dark, so recover the
+                    // qualifier and append it to the keyword bucket's 2nd segment — reproducing the
+                    // old "…Accessibility/Light" buckets. Accessibility Common (non-keyword) tokens
+                    // duplicate the base Light/Dark Common, so skip them (old had no Common variant).
+                    const isAccessMode = (preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && /accessib/i.test(mode.name);
+                    const accessSuffix = isAccessMode ? 'Accessibility' : '';
                     let colorName = '';
                     if (finalValue && finalValue.includes('/')) {
                         const valParts = finalValue.replace(/[{}]/g, '').split('/');
@@ -2792,13 +2773,13 @@
                     // iOS4: Negative+Sell → RiseFall, Positive+Buy → BuySell (legacy)
                     if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Negative'))) {
                         if (dominantColors.Fall) colorName = dominantColors.Fall;
-                        iosIndex = `RiseFall/Fall${colorName}/${safeModeName}`;
+                        iosIndex = `RiseFall/Fall${colorName}${accessSuffix}/${safeModeName}`;
                     } else if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Buy') || v.name.includes('Sell'))) {
                         if (dominantColors.Buy) colorName = dominantColors.Buy;
-                        iosIndex = `BuySell/Buy${colorName}/${safeModeName}`;
+                        iosIndex = `BuySell/Buy${colorName}${accessSuffix}/${safeModeName}`;
                     } else if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Yes') || v.name.includes('No'))) {
                         if (dominantColors.Yes) colorName = dominantColors.Yes;
-                        iosIndex = `YesNo/Yes${colorName}/${safeModeName}`;
+                        iosIndex = `YesNo/Yes${colorName}${accessSuffix}/${safeModeName}`;
                     } else if (preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && !isPlainOnToken && (v.name.includes('Negative') || v.name.includes('Sell'))) {
                         if (dominantColors.Fall) colorName = dominantColors.Fall;
                         iosIndex = `RiseFall/Fall${colorName}/${safeModeName}`;
@@ -2806,18 +2787,18 @@
                         if (dominantColors.Buy) colorName = dominantColors.Buy;
                         iosIndex = `BuySell/Buy${colorName}/${safeModeName}`;
                     } else {
+                        // Non-keyword (Common) token. In an accessibility mode it duplicates the base
+                        // Light/Dark Common value, so skip it entirely (matches the old export).
+                        if (isAccessMode) return;
                         iosIndex = `Common/${safeModeName}`;
                     }
                 }
 
-                // iOS7/iOS8: inject unique child suffix into bucket key second segment
-                if ((preset === 'iOS7' || preset === 'iOS8') && activeChildPairs[col.id] && iosIndex && !iosIndex.startsWith('Common/')) {
-                  const iosParts = iosIndex.split('/');
-                  if (iosParts.length >= 2) {
-                    iosParts[1] = iosParts[1] + activeChildPairs[col.id].uniqueSuffix;
-                    iosIndex = iosParts.join('/');
-                  }
-                }
+                // NOTE: native extended collections are bucketed purely by their resolved color
+                // (dominantColors) + accessibility-mode suffix above — NO collection-name suffix is
+                // injected (that produced doubled keys like "FallBlueFallBlue"). Distinct brand
+                // colors (FallRed/FallBlue/FallGreen, BuyBlue/BuyRed) keep the buckets separate, and
+                // the child→parent $index merge below folds them into the parent collection.
 
                 hasSelected = true;
                 let targetStorage;
