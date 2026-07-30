@@ -14,58 +14,110 @@ async function loadVariables() {
     // each extension-mode value ourselves: this level's override if present, else walk up the
     // parent chain (by parentModeId, or by mode name/index if that isn't exposed) to the base
     // variable's own valuesByMode.
-    const collectionById = {};
-    collections.forEach(c => { collectionById[c.id] = c; });
+    //
+    // IMPORTANT: variableOverrides / modes / valuesByMode are native getters — every read
+    // re-marshals the whole structure across the plugin sandbox boundary (deepWrap → newString).
+    // Reading them per-variable-per-mode exhausts the JSVM heap and Figma kills the plugin with
+    // "Plugin runtime aborted". Snapshot each collection ONCE here, then only read the snapshot.
+    const colCache = {};
+    collections.forEach(c => {
+      colCache[c.id] = {
+        id: c.id,
+        name: c.name,
+        isExtension: c.isExtension || false,
+        parentId: c.parentVariableCollectionId || null,
+        modes: (c.modes || []).map(m => ({ modeId: m.modeId, name: m.name, parentModeId: m.parentModeId || null })),
+        overrides: c.variableOverrides || {}
+      };
+    });
 
-    const resolveExtendedRaw = (v, startCol, startModeId) => {
-      let col = startCol;
+    const resolveExtendedRaw = (varId, baseValues, startColId, startModeId) => {
+      let meta = colCache[startColId];
       let modeId = startModeId;
       let guard = 0;
-      while (col && guard++ < 20) {
-        const ov = col.variableOverrides && col.variableOverrides[v.id];
+      while (meta && guard++ < 20) {
+        const ov = meta.overrides[varId];
         if (ov && Object.prototype.hasOwnProperty.call(ov, modeId)) return ov[modeId];
-        const parentCol = col.parentVariableCollectionId ? collectionById[col.parentVariableCollectionId] : null;
-        if (!parentCol) break;
-        const modeIdx = (col.modes || []).findIndex(m => m.modeId === modeId);
-        const mode = modeIdx >= 0 ? col.modes[modeIdx] : null;
+        const parentMeta = meta.parentId ? colCache[meta.parentId] : null;
+        if (!parentMeta) break;
+        const modeIdx = meta.modes.findIndex(m => m.modeId === modeId);
+        const mode = modeIdx >= 0 ? meta.modes[modeIdx] : null;
         let parentModeId = mode && mode.parentModeId;
         if (!parentModeId) {
-          const pModes = parentCol.modes || [];
+          const pModes = parentMeta.modes;
           const byName = mode && pModes.find(pm => pm.name === mode.name);
           parentModeId = byName ? byName.modeId : (pModes[modeIdx] ? pModes[modeIdx].modeId : (pModes[0] && pModes[0].modeId));
         }
         if (!parentModeId) break;
-        col = parentCol;
+        meta = parentMeta;
         modeId = parentModeId;
       }
-      return v.valuesByMode ? v.valuesByMode[modeId] : undefined;
+      return baseValues ? baseValues[modeId] : undefined;
+    };
+
+    // Snapshot each local variable once (same native-getter caveat as the collections above).
+    const varSnapshot = {};
+    localVariables.forEach(v => {
+      varSnapshot[v.id] = {
+        id: v.id,
+        name: v.name,
+        resolvedType: v.resolvedType,
+        variableCollectionId: v.variableCollectionId,
+        valuesByMode: v.valuesByMode || {},
+        scopes: v.scopes,
+        hidden: v.hiddenFromPublishing || false
+      };
+    });
+
+    // Memoize cross-file lookups. These were previously re-fetched per variable, per mode, per
+    // alias hop — thousands of redundant async calls, each re-marshalling a collection.
+    const extVarCache = {};
+    const getExtVar = async (id) => {
+      if (!Object.prototype.hasOwnProperty.call(extVarCache, id)) {
+        let snap = null;
+        try {
+          const ev = await figma.variables.getVariableByIdAsync(id);
+          if (ev) snap = { id: ev.id, name: ev.name, variableCollectionId: ev.variableCollectionId, valuesByMode: ev.valuesByMode || {} };
+        } catch (e) { snap = null; }
+        extVarCache[id] = snap;
+      }
+      return extVarCache[id];
+    };
+
+    const extColCache = {};
+    const getExtCol = async (id) => {
+      if (!Object.prototype.hasOwnProperty.call(extColCache, id)) {
+        let snap = null;
+        try {
+          const ec = await figma.variables.getVariableCollectionByIdAsync(id);
+          if (ec) snap = { name: ec.name, modes: (ec.modes || []).map(m => ({ modeId: m.modeId, name: m.name })) };
+        } catch (e) { snap = null; }
+        extColCache[id] = snap;
+      }
+      return extColCache[id];
     };
 
     const variableMap = {};
 
     // Map local variables for alias resolution
-    localVariables.forEach(v => {
-      const col = collections.find(c => c.id === v.variableCollectionId);
-      const colName = col ? col.name : "Unknown";
-      variableMap[v.id] = `${colName}/${v.name}`;
+    Object.keys(varSnapshot).forEach(id => {
+      const v = varSnapshot[id];
+      const col = colCache[v.variableCollectionId];
+      variableMap[id] = `${col ? col.name : "Unknown"}/${v.name}`;
     });
 
     // Resolve external library aliases
-    for (const v of localVariables) {
-      for (const modeId in v.valuesByMode) {
-        const value = v.valuesByMode[modeId];
-        if (value && value.type === 'VARIABLE_ALIAS') {
-          if (!variableMap[value.id]) {
-            try {
-              const externalVar = await figma.variables.getVariableByIdAsync(value.id);
-              if (externalVar) {
-                const extCol = await figma.variables.getVariableCollectionByIdAsync(externalVar.variableCollectionId);
-                const extColName = extCol ? extCol.name : "Library";
-                variableMap[value.id] = `${extColName}/${externalVar.name}`;
-              }
-            } catch (e) {
-              console.warn("Could not resolve external alias:", value.id);
-            }
+    for (const id in varSnapshot) {
+      const values = varSnapshot[id].valuesByMode;
+      for (const modeId in values) {
+        const value = values[modeId];
+        if (value && value.type === 'VARIABLE_ALIAS' && !variableMap[value.id]) {
+          const externalVar = await getExtVar(value.id);
+          if (externalVar) {
+            const extCol = await getExtCol(externalVar.variableCollectionId);
+            variableMap[value.id] = `${extCol ? extCol.name : "Library"}/${externalVar.name}`;
+          } else {
+            console.warn("Could not resolve external alias:", value.id);
           }
         }
       }
@@ -73,20 +125,19 @@ async function loadVariables() {
 
     // Catalog alias targets referenced ONLY by extension overrides (they don't appear in any
     // base variable's valuesByMode), so aliasMap/export can name them instead of "unknown".
-    for (const collection of collections) {
-      if (!collection.isExtension || !collection.variableOverrides) continue;
-      for (const ovVarId in collection.variableOverrides) {
-        const modeVals = collection.variableOverrides[ovVarId];
+    for (const colId in colCache) {
+      const meta = colCache[colId];
+      if (!meta.isExtension) continue;
+      for (const ovVarId in meta.overrides) {
+        const modeVals = meta.overrides[ovVarId];
         for (const mId in modeVals) {
           const value = modeVals[mId];
           if (value && value.type === 'VARIABLE_ALIAS' && !variableMap[value.id]) {
-            try {
-              const av = await figma.variables.getVariableByIdAsync(value.id);
-              if (av) {
-                const ac = await figma.variables.getVariableCollectionByIdAsync(av.variableCollectionId);
-                variableMap[value.id] = `${ac ? ac.name : 'Library'}/${av.name}`;
-              }
-            } catch (e) {
+            const av = await getExtVar(value.id);
+            if (av) {
+              const ac = await getExtCol(av.variableCollectionId);
+              variableMap[value.id] = `${ac ? ac.name : 'Library'}/${av.name}`;
+            } else {
               console.warn("Could not resolve extension-override alias:", value.id);
             }
           }
@@ -96,77 +147,76 @@ async function loadVariables() {
 
     // Prep data for UI
     const dataForUi = await Promise.all(collections.map(async (collection) => {
-      const processedVars = await Promise.all(collection.variableIds.map(async (varId) => {
+      const meta = colCache[collection.id];
+      const modes = meta.modes;
+      const variableIds = collection.variableIds;
+
+      const processedVars = await Promise.all(variableIds.map(async (varId) => {
         try {
-          const v = localVariables.find(variable => variable.id === varId);
+          const v = varSnapshot[varId];
           if (!v) return null;
 
           // A variable's own valuesByMode is keyed by its DEFINING collection's modeIds. For an
           // extension that's the parent's modeIds, so cells keyed by the extension's own modes
           // come back empty — rebuild them below via resolveExtendedRaw.
-          let effectiveValues = v.valuesByMode;
+          const baseValues = v.valuesByMode;
+          let effectiveValues = baseValues;
           const overriddenByMode = {};
-          if (collection.isExtension) {
+          if (meta.isExtension) {
             // Extension variables inherit the parent's modeIds; rebuild values keyed by THIS
             // collection's modes (override at this level, else inherited up the parent chain).
             effectiveValues = {};
-            const overrides = (collection.variableOverrides && collection.variableOverrides[v.id]) || {};
-            collection.modes.forEach(m => {
+            const overrides = meta.overrides[varId] || {};
+            modes.forEach(m => {
               overriddenByMode[m.modeId] = Object.prototype.hasOwnProperty.call(overrides, m.modeId);
-              effectiveValues[m.modeId] = resolveExtendedRaw(v, collection, m.modeId);
+              effectiveValues[m.modeId] = resolveExtendedRaw(varId, baseValues, collection.id, m.modeId);
             });
           }
 
           // Helper function to resolve color values
           const resolveColorForMode = async (modeIdx) => {
-            if (v.resolvedType !== 'COLOR' || !collection.modes[modeIdx]) return null;
-            
-            let currentVal = effectiveValues[collection.modes[modeIdx].modeId];
-            let depth = 0; 
-            
+            if (v.resolvedType !== 'COLOR' || !modes[modeIdx]) return null;
+
+            let currentVal = effectiveValues[modes[modeIdx].modeId];
+            let depth = 0;
+
             while (currentVal && currentVal.type === 'VARIABLE_ALIAS' && depth < 5) {
-              const aliasVar = await figma.variables.getVariableByIdAsync(currentVal.id);
+              const aliasVar = await getExtVar(currentVal.id);
               if (aliasVar) {
-                const aliasCol = await figma.variables.getVariableCollectionByIdAsync(aliasVar.variableCollectionId);
-                
-                let targetModeId;
-                if (aliasCol.modes && aliasCol.modes[modeIdx]) {
-                  targetModeId = aliasCol.modes[modeIdx].modeId;
-                } else {
-                  targetModeId = aliasCol.modes[0].modeId;
-                }
-                
-                currentVal = aliasVar.valuesByMode[targetModeId];
+                const aliasCol = await getExtCol(aliasVar.variableCollectionId);
+                const aModes = aliasCol ? aliasCol.modes : [];
+                const target = aModes[modeIdx] || aModes[0];
+                if (!target) break;
+
+                currentVal = aliasVar.valuesByMode[target.modeId];
                 depth++;
-              } else { 
-                break; 
+              } else {
+                break;
               }
             }
             return currentVal;
           };
 
           const resolvedValues = {};
-          
+
           if (v.resolvedType === 'COLOR') {
-            for (let i = 0; i < collection.modes.length; i++) {
-              const mId = collection.modes[i].modeId;
-              resolvedValues[mId] = await resolveColorForMode(i);
+            for (let i = 0; i < modes.length; i++) {
+              resolvedValues[modes[i].modeId] = await resolveColorForMode(i);
             }
           } else if (v.resolvedType === 'FLOAT') {
-            for (let i = 0; i < collection.modes.length; i++) {
-              const mId = collection.modes[i].modeId;
+            for (let i = 0; i < modes.length; i++) {
+              const mId = modes[i].modeId;
               let currentVal = effectiveValues[mId];
               if (currentVal && currentVal.type === 'VARIABLE_ALIAS') {
                 let depth = 0;
                 while (currentVal && currentVal.type === 'VARIABLE_ALIAS' && depth < 5) {
-                  try {
-                    const aliasVar = await figma.variables.getVariableByIdAsync(currentVal.id);
-                    if (aliasVar) {
-                      const aliasCol = await figma.variables.getVariableCollectionByIdAsync(aliasVar.variableCollectionId);
-                      const targetModeId = (aliasCol.modes[i] || aliasCol.modes[0]).modeId;
-                      currentVal = aliasVar.valuesByMode[targetModeId];
-                    } else { break; }
-                  } catch (e) { break; }
+                  const aliasVar = await getExtVar(currentVal.id);
+                  if (!aliasVar) break;
+                  const aliasCol = await getExtCol(aliasVar.variableCollectionId);
+                  const aModes = aliasCol ? aliasCol.modes : [];
+                  const target = aModes[i] || aModes[0];
+                  if (!target) break;
+                  currentVal = aliasVar.valuesByMode[target.modeId];
                   depth++;
                 }
                 if (typeof currentVal === 'number') resolvedValues[mId] = currentVal;
@@ -182,9 +232,9 @@ async function loadVariables() {
             scopes: v.scopes,
             resolvedValuesByMode: resolvedValues,
             overriddenByMode: overriddenByMode,
-            hidden: v.hiddenFromPublishing || false
+            hidden: v.hidden
           };
-          
+
         } catch (varErr) {
           console.error("Error processing variable:", varId, varErr);
           return null;
@@ -192,19 +242,19 @@ async function loadVariables() {
       }));
 
       return {
-        id: collection.id,
-        name: collection.name,
-        modes: collection.modes,
-        isExtension: collection.isExtension || false,
-        parentId: collection.isExtension ? collection.parentVariableCollectionId : null,
+        id: meta.id,
+        name: meta.name,
+        modes: modes,
+        isExtension: meta.isExtension,
+        parentId: meta.isExtension ? meta.parentId : null,
         variables: processedVars.filter(v => v !== null)
       };
     }));
 
     // Send data to UI
-    figma.ui.postMessage({ 
-      type: 'load-data', 
-      collections: dataForUi, 
+    figma.ui.postMessage({
+      type: 'load-data',
+      collections: dataForUi,
       variableMap: variableMap,
       fileName: fileName
     });
@@ -220,7 +270,7 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'ui-ready') {
     await loadVariables();
   }
-  
+
   if (msg.type === 'refresh-variables') {
     await loadVariables();
     figma.notify("Variables refreshed");
