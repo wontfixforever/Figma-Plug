@@ -896,15 +896,9 @@
     </label>
 
     <select id="export-preset">
-     <option value="Default">Default</option>
-        <option value="iOS">iOS</option>
-        <option value="iOS2">iOS2</option>
-        <option value="iOS3">iOS3</option>
-        <option value="iOS4">iOS4</option>
-        <option value="iOS5">iOS5</option>
-        <option value="iOS6">iOS6</option>
-        <option value="iOS7">iOS7</option>
-        <option value="iOS8">iOS8</option> </select>
+      <option value="Default">Default</option>
+      <option value="iOS">iOS (iTWS,iGT)</option>
+    </select>
 
     <button id="select-all">Select All</button>
 
@@ -2519,9 +2513,9 @@
             } 
         };
 
-        if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8') {
+        if (preset !== 'iOS' && preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8') {
             if (!primitivesMode) colResult[col.name].modes = {};
-        } else if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
+        } else if (preset === 'iOS' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
             colResult[col.name].$index = {};
         }
 
@@ -2549,7 +2543,7 @@
         // alias values (after collection-name strip). Used to drop redundant brand
         // prefixes like "RATIO/" while keeping meaningful subfolders like "Accessibility/".
         let ios8AliasPrefix = '';
-        if (preset === 'iOS8' && activeChildPairs[col.id]) {
+        if ((preset === 'iOS' || preset === 'iOS8') && activeChildPairs[col.id]) {
             const aliasPaths = [];
             col.variables.forEach(v => {
                 if (!selectedKeys.has(col.id + '|' + v.id)) return;
@@ -2600,7 +2594,7 @@
 
           // --- iOS3 DOMINANT COLORS ---
           const dominantColors = { Fall: "", Buy: "", Yes: "" };
-          if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
+          if (preset === 'iOS' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
               col.variables.forEach(v => {
                   if (!selectedKeys.has(col.id + '|' + v.id)) return;
                   
@@ -2654,7 +2648,7 @@
                     const allMatch = allFamilyIds.every(id => String(getExportValue(v.valuesByMode[id])) === parentValStr);
                     let safeModeName = mode.name.split(' ')[0]; // e.g. "Light"
                     let safeParentName = (collectionsData.find(c=>c.id===col.id).modes.find(m=>m.modeId===parentId).name).split(' ')[0]; // e.g. "Light"
-                    if (preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
+                    if (preset === 'iOS' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
                         safeModeName = ios5BucketName(mode.name);
                         safeParentName = ios5BucketName(collectionsData.find(c=>c.id===col.id).modes.find(m=>m.modeId===parentId).name);
                     }
@@ -2664,7 +2658,7 @@
                     const keywords = ["Positive", "Negative", "Buy", "Sell", "Yes", "No"];
                     const hasKeyword = keywords.some(kw => v.name.includes(kw));
 
-                    if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && hasKeyword) {
+                    if ((preset === 'iOS' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && hasKeyword) {
                         let colorName = "";
                         if (finalValue && finalValue.includes('/')) {
                             const valParts = finalValue.replace(/[{}]/g, '').split('/');
@@ -2699,7 +2693,7 @@
                         let groupName = "";
                         let prefix = "RiseFall";
 
-                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
+                        if (preset === 'iOS' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
                             if (v.name.includes("Positive") || v.name.includes("Negative")) {
                                 prefix = "RiseFall";
                                 groupName = "Fall";
@@ -2741,7 +2735,7 @@
                     // Deduplication logic: If a child mode's value is the exact same as the parent's value,
                     // AND it belongs in Common, skip exporting it to prevent duplicates in the JSON.
                     if (isChild) {
-                        if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
+                        if (preset === 'iOS' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') {
                             if (String(finalValue) === parentValStr && iosIndex && iosIndex.startsWith("Common/")) return;
                         }
                         else {
@@ -2751,18 +2745,18 @@
                 }
 
                 // --- iOS4/iOS5 FALLBACK: name-based bucketing when no parent/child configured ---
-                if ((preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !iosIndex) {
-                    const safeModeName = (preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') ? ios5BucketName(mode.name) : mode.name;
+                if ((preset === 'iOS' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !iosIndex) {
+                    const safeModeName = (preset === 'iOS' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') ? ios5BucketName(mode.name) : mode.name;
                     const leafName = v.name.split('/').pop().trim();
                     // iOS4: Plain "On *" tokens (On Buy, On Negative, etc.) route to Common.
                     // iOS5: All keyword tokens route to their keyword bucket regardless of "On " prefix.
-                    const isPlainOnToken = preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && leafName.startsWith('On ') && !leafName.endsWith(' Subtle');
+                    const isPlainOnToken = preset !== 'iOS' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && leafName.startsWith('On ') && !leafName.endsWith(' Subtle');
                     // Accessibility is now a MODE (e.g. "Accessibility Light") rather than a linked
                     // child collection. ios5BucketName() folds it to Light/Dark, so recover the
                     // qualifier and append it to the keyword bucket's 2nd segment — reproducing the
                     // old "…Accessibility/Light" buckets. Accessibility Common (non-keyword) tokens
                     // duplicate the base Light/Dark Common, so skip them (old had no Common variant).
-                    const isAccessMode = (preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && /accessib/i.test(mode.name);
+                    const isAccessMode = (preset === 'iOS' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && /accessib/i.test(mode.name);
                     const accessSuffix = isAccessMode ? 'Accessibility' : '';
                     let colorName = '';
                     if (finalValue && finalValue.includes('/')) {
@@ -2771,19 +2765,19 @@
                     }
                     // iOS5: Positive+Negative → RiseFall, Buy+Sell → BuySell (matches parent-child path)
                     // iOS4: Negative+Sell → RiseFall, Positive+Buy → BuySell (legacy)
-                    if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Negative'))) {
+                    if ((preset === 'iOS' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Negative'))) {
                         if (dominantColors.Fall) colorName = dominantColors.Fall;
                         iosIndex = `RiseFall/Fall${colorName}${accessSuffix}/${safeModeName}`;
-                    } else if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Buy') || v.name.includes('Sell'))) {
+                    } else if ((preset === 'iOS' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Buy') || v.name.includes('Sell'))) {
                         if (dominantColors.Buy) colorName = dominantColors.Buy;
                         iosIndex = `BuySell/Buy${colorName}${accessSuffix}/${safeModeName}`;
-                    } else if ((preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Yes') || v.name.includes('No'))) {
+                    } else if ((preset === 'iOS' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && !isPlainOnToken && (v.name.includes('Yes') || v.name.includes('No'))) {
                         if (dominantColors.Yes) colorName = dominantColors.Yes;
                         iosIndex = `YesNo/Yes${colorName}${accessSuffix}/${safeModeName}`;
-                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && !isPlainOnToken && (v.name.includes('Negative') || v.name.includes('Sell'))) {
+                    } else if (preset !== 'iOS' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && !isPlainOnToken && (v.name.includes('Negative') || v.name.includes('Sell'))) {
                         if (dominantColors.Fall) colorName = dominantColors.Fall;
                         iosIndex = `RiseFall/Fall${colorName}/${safeModeName}`;
-                    } else if (preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Buy'))) {
+                    } else if (preset !== 'iOS' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && !isPlainOnToken && (v.name.includes('Positive') || v.name.includes('Buy'))) {
                         if (dominantColors.Buy) colorName = dominantColors.Buy;
                         iosIndex = `BuySell/Buy${colorName}/${safeModeName}`;
                     } else {
@@ -2803,8 +2797,8 @@
                 hasSelected = true;
                 let targetStorage;
 
-                if ((preset === 'iOS2' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && iosIndex) {
-                    const root = (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') ? colResult[col.name].$index : colResult[col.name];
+                if ((preset === 'iOS' || preset === 'iOS2' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') && iosIndex) {
+                    const root = (preset === 'iOS' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') ? colResult[col.name].$index : colResult[col.name];
                     if (!root[iosIndex]) root[iosIndex] = {};
                     targetStorage = root[iosIndex];
                 } else {
@@ -2825,7 +2819,7 @@
                     "$type": v.type.toLowerCase(),
                     "$libraryName": currentFileName,
                     "$collectionName": col.name,
-                    "$value": (preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') ? (preset === 'iOS8' && activeChildPairs[col.id] && ios8AliasPrefix ? shortenAlias(finalValue, 0, ios8AliasPrefix) : shortenAlias(finalValue, activeChildPairs[col.id] ? 3 : 2)) : finalValue
+                    "$value": (preset === 'iOS' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') ? ((preset === 'iOS' || preset === 'iOS8') && activeChildPairs[col.id] && ios8AliasPrefix ? shortenAlias(finalValue, 0, ios8AliasPrefix) : shortenAlias(finalValue, activeChildPairs[col.id] ? 3 : 2)) : finalValue
                 };
 
                 if (exposeUnderlying && rawValue && rawValue.type === 'VARIABLE_ALIAS') {
@@ -2838,8 +2832,8 @@
                     }
                 }
 
-                if (preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') varObj["$mode"] = mode.name;
-                if (preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && iosIndex) varObj["$index"] = iosIndex;
+                if (preset === 'iOS' || preset === 'iOS3' || preset === 'iOS4' || preset === 'iOS5' || preset === 'iOS6' || preset === 'iOS7' || preset === 'iOS8') varObj["$mode"] = mode.name;
+                if (preset !== 'iOS' && preset !== 'iOS2' && preset !== 'iOS3' && preset !== 'iOS4' && preset !== 'iOS5' && preset !== 'iOS6' && preset !== 'iOS7' && preset !== 'iOS8' && iosIndex) varObj["$index"] = iosIndex;
 
                 let current = targetStorage;
                 if (parts.length > 0) {
