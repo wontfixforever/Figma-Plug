@@ -2,6 +2,7 @@
 <html>
 <head>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
@@ -33,6 +34,8 @@
       --icon-btn-border: #C8D2E4;
       --icon-btn-hover: #F4F7FC;
       --icon-btn-active: #EBF0FA;
+      --magenta: #A3218E;
+      --magenta-dark: #7A1A6C;
       --footer-bg: #2A2D35;
       --footer-border: #323944;
       --select-bg: #FFFFFF;
@@ -111,6 +114,8 @@
       --icon-btn-border: #e0e0e4;
       --icon-btn-hover: #f4f4f5;
       --icon-btn-active: #ececef;
+      --magenta: #A3218E;
+      --magenta-dark: #7A1A6C;
       --footer-bg: rgba(255,255,255,0.94);
       --footer-border: #ececef;
       --select-bg: #ffffff;
@@ -611,6 +616,237 @@
 
     .changelog-btn-disabled { opacity: 0.3 !important; cursor: not-allowed; pointer-events: none; }
 
+    /* ── Shared tab empty state (Tokens / SVG / Collection Swap) ── */
+    .tab-empty-state { text-align: center; color: var(--text-secondary); padding: 40px 20px; }
+    .tab-empty-state svg { width: 48px; height: 48px; opacity: 0.5; margin-bottom: 12px; }
+    .tab-empty-state .ees-title { font-size: 13px; margin-bottom: 8px; }
+    .tab-empty-state .ees-hint { font-size: 11px; opacity: 0.7; }
+    .tab-empty-state .ees-hint strong { font-weight: 650; color: var(--text-primary); }
+
+    /* Points at the control that resolves the "No Visible Tokens" state. The accent
+       border persists while that state is showing; the pulse replays on tab entry. */
+    #show-hidden-toggle.attn { border-color: var(--brand); }
+    #show-hidden-toggle.attn.pulse { animation: showHiddenPulse 0.7s ease-in-out 2; }
+    @keyframes showHiddenPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(var(--brand-rgb), 0); }
+      50%      { box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.35); }
+    }
+
+    /* ── SVG Tab Styles ── */
+    #svg-tab { padding: 16px; }
+    .svg-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+      padding: 4px;
+    }
+    .svg-preview-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      /* shift-click range selection would otherwise select the card text */
+      user-select: none; -webkit-user-select: none;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+    .svg-preview-card:hover {
+      border-color: var(--brand);
+    }
+    .svg-preview-card.selected {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 2px var(--brand);
+    }
+    .svg-preview-card .svg-thumb {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-canvas);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .svg-preview-card .svg-thumb svg {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .svg-preview-card .svg-name {
+      font-size: 10px;
+      color: var(--text-primary);
+      text-align: center;
+      word-break: break-word;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .svg-preview-card .svg-size {
+      font-size: 9px;
+      color: var(--text-secondary);
+    }
+    #svg-export-size {
+      flex: 0 0 auto; height: 30px; border-radius: 6px; border: 1px solid var(--border-medium);
+      font-family: var(--font-sans); font-size: 11px; font-weight: 500;
+      padding: 0 24px 0 10px; margin-right: 8px; cursor: pointer;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      background-color: var(--bg-surface); color: var(--text-primary);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center; background-size: 10px 6px;
+    }
+    #svg-export-btn, #swap-apply-btn {
+      flex: 0 0 auto; height: 30px; border-radius: 6px; border: none;
+      font-family: var(--font-sans); font-size: 11px; font-weight: 600;
+      padding: 0 16px; cursor: pointer;
+      background: var(--btn-primary-bg); color: var(--btn-primary-fg);
+      transition: background 0.12s ease;
+    }
+    #svg-export-btn:hover, #swap-apply-btn:hover { background: var(--btn-primary-hover-bg); }
+    #swap-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    #swap-apply-btn:disabled:hover { background: var(--btn-primary-bg); }
+    #swap-pending-note {
+      flex: 1 1 auto; min-width: 0; font-size: 11px; color: var(--text-secondary);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    #swap-pending-note.active { color: var(--brand); font-weight: 600; }
+
+    /* SVG preset select — matches export preset style */
+    #svg-preset {
+      flex: 0 0 auto; height: 30px; border-radius: 6px; border: none;
+      font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: 0.01em;
+      padding: 0 30px 0 12px; margin-right: 8px; cursor: pointer;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      background-color: var(--btn-primary-bg); color: var(--btn-primary-fg);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2318181b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; background-size: 10px 6px;
+      transition: background 0.12s ease;
+    }
+    #svg-preset:hover { background-color: var(--btn-primary-hover-bg); }
+    #svg-preset:focus { outline: none; }
+    #svg-preset option { background: var(--bg-surface); color: var(--text-primary); }
+    body.light #svg-preset {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    }
+
+    /* ── Collection Swap Tab Styles ──
+       Reuses the SVG tab's card/thumb classes so the grid looks identical.
+       Adds a right-hand side panel listing the selected object's color tokens. */
+    #swap-tab.tab-content.active { flex-direction: row; overflow: hidden; padding: 0; }
+    .swap-main {
+      flex: 1 1 auto; min-width: 0; min-height: 0;
+      overflow: auto; padding: 12px 16px; scrollbar-gutter: stable;
+    }
+    .swap-panel {
+      flex: 0 0 300px; min-height: 0;
+      display: flex; flex-direction: column;
+      border-left: 1px solid var(--border-subtle);
+      background: var(--bg-page);
+    }
+    .swap-panel-header {
+      flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; padding: 10px 12px 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-family: var(--font-sans); font-size: 9.5px; font-weight: 700;
+      color: var(--section-header); text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .swap-panel-close {
+      /* flex/margin override needed — the global button rule sets flex: 1 */
+      flex: 0 0 auto; margin-left: auto;
+      width: 20px; height: 20px; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      border: none; border-radius: 4px; background: transparent; cursor: pointer;
+      color: var(--text-secondary); font-size: 15px; line-height: 1;
+    }
+    .swap-panel-close:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+    .swap-panel-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 14px; }
+    /* Per-collection preview mosaic. Always occupies the same 96px block a single
+       preview would, subdividing it as the count grows: 1 = full, 2 = half width
+       at full height, 3-4 = 2x2, >4 = three previews + a "+N" cell. */
+    .swap-mosaic {
+      width: 100%; height: 96px; display: grid; gap: 6px; margin: 6px 0 2px;
+    }
+    .swap-mosaic.count-1 { grid-template-columns: 1fr; }
+    .swap-mosaic.count-2 { grid-template-columns: 1fr 1fr; }
+    .swap-mosaic.quad { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+    .swap-mosaic-cell {
+      display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 0;
+      background: var(--bg-canvas); border: 1px solid var(--border-medium);
+      border-radius: 6px; overflow: hidden;
+    }
+    .swap-mosaic-cell svg { max-width: 78%; max-height: 78%; }
+    .swap-mosaic-cell.is-empty { border-style: dashed; opacity: 0.4; }
+    .swap-mosaic-cell.is-more {
+      font-family: var(--font-sans); font-size: 12px; font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .swap-panel-meta { font-size: 10px; color: var(--text-secondary); margin-top: 3px; }
+    .swap-panel-note {
+      font-size: 11px; color: var(--text-secondary);
+      text-align: center; padding: 24px 8px; line-height: 1.5;
+    }
+    .swap-group { margin-top: 16px; }
+    .swap-group-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding-bottom: 5px; margin-bottom: 4px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-family: var(--font-sans); font-size: 9.5px; font-weight: 700;
+      color: var(--section-header); text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .swap-group-header > span:first-child {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .swap-group-count {
+      flex: 0 0 auto; font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+      font-size: 9px; font-weight: 600; letter-spacing: 0;
+      color: var(--text-secondary); background: var(--bg-surface);
+      border: 1px solid var(--border-medium); border-radius: 999px; padding: 1px 6px;
+    }
+    .swap-target-select {
+      width: 100%; height: 26px; margin: 6px 0 2px;
+      border-radius: 6px; border: 1px solid var(--border-medium);
+      font-family: var(--font-sans); font-size: 10.5px; font-weight: 500;
+      padding: 0 24px 0 8px; cursor: pointer;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      background-color: var(--bg-surface); color: var(--text-primary);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center; background-size: 10px 6px;
+      text-overflow: ellipsis;
+    }
+    .swap-target-select:focus { outline: none; border-color: var(--brand); }
+    .swap-target-select.changed {
+      border-color: var(--brand); color: var(--brand); font-weight: 600;
+    }
+    .swap-group.changed .swap-token-name { color: var(--text-secondary); }
+    .swap-group-arrow {
+      font-size: 9.5px; color: var(--brand); font-weight: 600;
+      margin-bottom: 4px; display: none;
+    }
+    .swap-group.changed .swap-group-arrow { display: block; }
+
+    .swap-token-row {
+      display: flex; align-items: center; gap: 8px; padding: 5px 0;
+    }
+    .swap-swatch {
+      flex: 0 0 auto; width: 14px; height: 14px; border-radius: 3px;
+      border: 1px solid var(--border-medium);
+    }
+    .swap-token-name {
+      flex: 1 1 auto; min-width: 0; font-size: 11px; color: var(--text-primary);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .swap-token-hex {
+      flex: 0 0 auto; font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+      font-size: 9.5px; color: var(--text-secondary);
+    }
+    .swap-token-ext {
+      flex: 0 0 auto; font-size: 8.5px; font-weight: 600; color: var(--brand);
+      border: 1px solid var(--brand); border-radius: 3px; padding: 0 3px;
+    }
+
     /* ── Changelog checkbox column ── */
     .diff-table .col-check-th { width: 28px; padding: 8px 4px; text-align: center; }
     .diff-row td.col-check-td { width: 28px; padding: 8px 4px; text-align: center; vertical-align: middle; }
@@ -657,22 +893,30 @@
     }
     .tag-modal {
       background: var(--bg-page); border: 1px solid var(--border-subtle);
-      border-radius: 10px; padding: 16px; width: 340px; max-height: 80vh;
-      overflow-y: auto; box-shadow: 0 8px 32px rgba(24,24,27,0.12);
-      display: flex; flex-direction: column;
+      border-radius: 10px; min-width: 280px; max-width: 600px; max-height: 80vh;
+      box-shadow: 0 8px 32px rgba(24,24,27,0.12);
+      display: inline-flex; flex-direction: column; overflow: hidden;
     }
     .tag-modal-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 12px; font-family: var(--font-sans);
+      flex: 0 0 auto; padding: 16px 16px 12px;
+      display: flex; align-items: center; white-space: nowrap;
+      font-family: var(--font-sans);
       font-weight: 700; font-size: 13px; color: var(--text-primary);
+      border-bottom: 1px solid var(--border-subtle);
     }
+    .tag-modal-body {
+      flex: 1 1 auto; overflow-y: auto; padding: 12px 16px; min-width: 0;
+    }
+    .tag-modal-header span { flex: 1; }
     .tag-modal-close {
+      flex: 0 0 auto; margin-left: auto;
       background: none; border: none; color: var(--text-tertiary);
       font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1;
     }
     .tag-modal-close:hover { color: var(--text-primary); }
     .tag-modal-tags {
       display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+      max-width: 400px;
     }
     .tag-pill {
       display: inline-flex; align-items: center; gap: 4px;
@@ -701,77 +945,47 @@
       line-height: 1; pointer-events: none;
     }
     .tag-selected .tag-order-badge { background: #fff; color: var(--navy); }
+    /* Dynamic SVG tags (Date/Time) — same shape, dark magenta instead of navy so they
+       read as visibly distinct from the static/literal tags below them. */
+    .tag-pill-dynamic { background: rgba(163,33,142,0.05); border-color: rgba(163,33,142,0.4); color: var(--magenta); }
+    .tag-pill-dynamic:hover { background: var(--magenta); border-color: var(--magenta); color: #fff; }
+    .tag-pill-dynamic.tag-selected { background: var(--magenta); border-color: var(--magenta); color: #fff; }
+    .tag-pill-dynamic.tag-selected .tag-order-badge { background: #fff; color: var(--magenta); }
     .tag-modal-input-row {
-      display: flex; gap: 6px; margin-bottom: 12px; width: 100%;
+      display: flex; gap: 6px; margin-bottom: 12px;
     }
     .tag-modal-input-row input {
-      flex: 1; min-width: 0; padding: 6px 8px; border-radius: 4px; font-size: 11px;
+      width: 160px; padding: 6px 8px; border-radius: 4px; font-size: 11px;
       border: 1px solid var(--border-medium); background: var(--bg-surface);
       color: var(--text-primary); font-family: var(--font-sans);
       height: 28px; box-sizing: border-box;
     }
     .tag-modal-input-row input::placeholder { color: var(--text-tertiary); }
     .tag-modal-input-row input:focus { outline: 1.5px solid var(--navy); border-color: var(--navy); }
-    #tag-add-btn {
+    #tag-add-btn, #svg-suffix-add-btn {
       width: 28px; min-width: 28px; max-width: 28px; height: 28px;
       padding: 0; border-radius: 4px; font-size: 16px;
       font-family: var(--font-sans); font-weight: 600;
-      background: var(--navy); color: #fff; border: none; cursor: pointer;
+      background: transparent; color: #000; border: 1px solid #000; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       flex: 0 0 28px;
     }
-    #tag-add-btn:hover { background: var(--navy-dark); }
+    #tag-add-btn:hover, #svg-suffix-add-btn:hover { background: rgba(0,0,0,0.05); }
     @keyframes hue-spin { to { filter: hue-rotate(360deg); } }
-    #tag-modal-export {
-      padding: 6px 14px; border-radius: 125px; font-size: 11px;
+    #tag-modal-export, #svg-suffix-export {
+      padding: 6px 14px; border-radius: 4px; font-size: 11px;
       font-family: var(--font-sans); font-weight: 600;
-      background: rgba(255,255,255,0.10); color: #fff;
-      border: 1px solid rgba(170,170,170,0.30);
-      position: relative; overflow: visible; cursor: pointer;
-      backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
-      box-shadow:
-        0 4px 12px -2px rgba(0,0,0,0.08),
-        inset 0 -1px 2px rgba(0,0,0,0.025),
-        inset 0 1px 2px rgba(255,255,255,0.125);
-      transition: all 0.15s ease;
+      background: #000; color: #fff;
+      border: none; cursor: pointer;
+      transition: opacity 0.15s ease;
     }
-    #tag-modal-export::after {
-      content: ''; position: absolute; inset: -1px; border-radius: 125px;
-      background: conic-gradient(
-        rgba(255,58,58,1),
-        rgba(255,170,58,0.6),
-        rgba(110,255,58,0.2),
-        rgba(58,255,137,0.45),
-        rgba(58,183,255,0.57),
-        rgba(127,58,255,0.7),
-        rgba(255,58,58,1)
-      );
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor; mask-composite: exclude;
-      padding: 1px;
-      opacity: 0; transition: opacity 0.15s ease;
-      z-index: 1; pointer-events: none;
-    }
-    #tag-modal-export:hover {
-      background: rgba(255,255,255,0.10);
-      border-color: transparent;
-      box-shadow:
-        -6px -2px 10px -4px rgba(255,58,58,0.35),
-        -3px -4px 10px -4px rgba(255,170,58,0.25),
-        3px -4px 10px -4px rgba(110,255,58,0.15),
-        6px -2px 10px -4px rgba(58,255,137,0.25),
-        6px 2px 10px -4px rgba(58,183,255,0.30),
-        3px 4px 10px -4px rgba(127,58,255,0.35),
-        -3px 4px 10px -4px rgba(200,58,255,0.30),
-        -6px 2px 10px -4px rgba(255,58,120,0.30);
-    }
-    #tag-modal-export:hover::after {
-      opacity: 1;
-      animation: hue-spin 2s linear infinite;
-    }
-    #tag-modal-export:active { opacity: 0.85; }
+    #tag-modal-export:hover, #svg-suffix-export:hover { opacity: 0.8; }
+    #tag-modal-export:active, #svg-suffix-export:active { opacity: 0.7; }
     .tag-modal-footer {
+      flex: 0 0 auto; padding: 12px 16px 16px;
       display: flex; justify-content: flex-end; gap: 8px;
+      border-top: 1px solid var(--border-subtle);
+      min-width: 0;
     }
 
     /* ══════════════════════════════════════════════════════════════
@@ -781,17 +995,6 @@
        Dark theme is unaffected (these only apply under body.light).
        ══════════════════════════════════════════════════════════════ */
 
-    /* Tag-modal export button (glass/gradient) → neutral surface in light */
-    body.light #tag-modal-export {
-      background: var(--bg-surface);
-      color: var(--text-primary);
-      border-color: var(--border-medium);
-    }
-    body.light #tag-modal-export::after { background: var(--accent); }
-    body.light #tag-modal-export:hover {
-      border-color: transparent;
-      box-shadow: 0 2px 8px rgba(24,24,27,0.10);
-    }
 
     /* Red SVG checkmark ticks → near-black (visible on white check bg / light page) */
     body.light .collection.expanded .col-header:not(:has(.col-check:checked)):hover input[type="checkbox"]:checked::after,
@@ -806,6 +1009,59 @@
     body.light .collection:not(.expanded) .col-header:not(:has(.col-check:checked)):hover .mode-col-check:checked::after,
     body.light .col-header:has(.col-check:checked) .mode-col-check:checked::after {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='none' stroke='%2318181B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5.5L4.2 7.5L8 3'/%3E%3C/svg%3E") !important;
+    }
+
+    /* ── SVG Mode Selection Grid ── */
+    .svg-mode-grid-section {
+      margin-bottom: 16px; padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .svg-mode-grid-header {
+      font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--section-header);
+      margin-bottom: 10px;
+    }
+    .svg-tag-subheader {
+      font-size: 9px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-tertiary);
+      margin: 10px 0 6px 0;
+    }
+    .svg-tag-subheader:first-of-type { margin-top: 4px; }
+    .svg-mode-grid {
+      display: grid; gap: 1px;
+      background: var(--border-subtle); border: 1px solid var(--border-subtle);
+      border-radius: 6px; overflow: hidden;
+      width: fit-content;
+    }
+    .svg-mode-grid-row {
+      display: contents;
+    }
+    .svg-mode-cell {
+      background: var(--bg-page); padding: 8px 10px;
+      font-size: 10px; display: flex; align-items: center; justify-content: center;
+    }
+    .svg-mode-cell.header {
+      background: var(--bg-surface); font-weight: 600;
+      color: var(--text-secondary); font-size: 9px;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .svg-mode-cell.row-label {
+      justify-content: flex-start; font-weight: 500;
+      color: var(--text-primary); white-space: nowrap;
+    }
+    .svg-mode-cell.row-label.is-ext {
+      padding-left: 20px; color: var(--text-secondary);
+    }
+    .svg-mode-cell.row-label.is-ext::before {
+      content: '↳'; margin-right: 6px; opacity: 0.5;
+    }
+    .svg-mode-check {
+      width: 16px; height: 16px; cursor: pointer; margin: 0;
+    }
+    .svg-mode-empty {
+      text-align: center; color: var(--text-tertiary);
+      font-size: 11px; padding: 16px; font-style: italic;
     }
 
   </style>
@@ -846,7 +1102,9 @@
 
   <div class="main-split">
     <div class="tabs-nav">
-      <div class="tab-btn active" onclick="switchTab('export-tab', this)">Export</div>
+      <div class="tab-btn active" onclick="switchTab('export-tab', this)">Tokens</div>
+      <div class="tab-btn" onclick="switchTab('svg-tab', this)">SVG</div>
+      <div class="tab-btn" onclick="switchTab('swap-tab', this)">Collection Swap</div>
       <div class="tab-btn" onclick="switchTab('changelog-tab', this)">Change Log</div>
     </div>
     <div class="content-main">
@@ -882,6 +1140,45 @@
     </div>
     <div id="diff-results"></div>
   </div>
+
+  <div id="svg-tab" class="tab-content">
+    <div class="svg-empty-state" id="svg-empty-state">
+      <div class="tab-empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        <div class="ees-title">No vectors selected</div>
+        <div class="ees-hint">Select vector layers in Figma to preview and export as SVG</div>
+      </div>
+    </div>
+    <div id="svg-preview-grid" class="svg-preview-grid" style="display: none;"></div>
+  </div>
+
+  <div id="swap-tab" class="tab-content">
+    <div class="swap-main">
+      <div id="swap-empty-state">
+        <div class="tab-empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+          <div class="ees-title">No objects selected</div>
+          <div class="ees-hint">Select layers in Figma, then pick one to inspect its color tokens</div>
+        </div>
+      </div>
+      <div id="swap-preview-grid" class="svg-preview-grid" style="display: none;"></div>
+    </div>
+    <div class="swap-panel" id="swap-panel" style="display: none;">
+      <div class="swap-panel-header">
+        <span>Color Tokens</span>
+        <button class="swap-panel-close" onclick="closeSwapPanel()" title="Close">&times;</button>
+      </div>
+      <div class="swap-panel-body" id="swap-panel-body"></div>
+    </div>
+  </div>
     </div>
   </div>
 
@@ -898,6 +1195,7 @@
     <select id="export-preset">
       <option value="Default">Default</option>
       <option value="iOS">iOS (iTWS,iGT)</option>
+      <option value="CSV">CSV</option>
     </select>
 
     <button id="select-all">Select All</button>
@@ -914,10 +1212,32 @@
       <input type="checkbox" id="changelog-include-excluded">
       <span>Show Excluded</span>
     </label>
-    
+
     <button id="export-txt-btn">Export .txt</button>
     <button id="export-csv-btn">Export .csv</button>
     <button id="export-json-btn">Export .json</button>
+  </div>
+
+  <div class="footer" id="footer-svg" style="display: none;">
+    <select id="svg-preset">
+      <option value="Token" selected>Token</option>
+      <option value="TokenHex">Token + Hex</option>
+      <option value="Web">Web (Legacy)</option>
+      <option value="Hex">Hex</option>
+    </select>
+    <select id="svg-export-size">
+      <option value="1">1x</option>
+      <option value="2">2x</option>
+      <option value="3">3x</option>
+      <option value="4">4x</option>
+    </select>
+    <button id="svg-export-btn">Export SVG</button>
+  </div>
+
+  <div class="footer" id="footer-swap" style="display: none;">
+    <!-- No scope control: each collection group already knows which objects use it -->
+    <span id="swap-pending-note">No collection changes</span>
+    <button id="swap-apply-btn">Swap Tokens</button>
   </div>
 
   <!-- Tag Picker Modal -->
@@ -934,6 +1254,49 @@
       </div>
       <div class="tag-modal-footer">
         <button id="tag-modal-export" onclick="closeTagModal(); performExport(selectedTags);">Export</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SVG Suffix Picker Modal -->
+  <div id="svg-suffix-modal" class="tag-modal-overlay" style="display:none;">
+    <div class="tag-modal">
+      <div class="tag-modal-header">
+        <span>SVG Export Options</span>
+        <button class="tag-modal-close" onclick="closeSvgSuffixModal()">&times;</button>
+      </div>
+
+      <div class="tag-modal-body">
+        <!-- Mode Selection Grid -->
+        <div class="svg-mode-grid-section" id="svg-mode-grid-section">
+          <div class="svg-mode-grid-header" id="svg-mode-grid-title">Color Mode Variants</div>
+          <div id="svg-mode-grid-container">
+            <div class="svg-mode-empty">Select vectors with bound color tokens to see available modes</div>
+          </div>
+        </div>
+
+        <!-- Folder Name Tags — only relevant when multiple selected SVGs get zipped -->
+        <div class="svg-mode-grid-section" id="svg-folder-tag-section" style="display:none;">
+          <div class="svg-mode-grid-header">Tag Folder</div>
+          <div class="tag-modal-tags" id="svg-folder-tags"></div>
+        </div>
+
+        <!-- Suffix Tags -->
+        <div class="svg-mode-grid-header">Tag SVGs</div>
+
+        <div class="svg-tag-subheader">Dynamic</div>
+        <div class="tag-modal-tags" id="svg-dynamic-tags"></div>
+
+        <div class="svg-tag-subheader">Static</div>
+        <div class="tag-modal-tags" id="svg-suffix-tags"></div>
+        <div class="tag-modal-input-row">
+          <input type="text" id="svg-suffix-input" placeholder="New tag..." maxlength="32">
+          <button id="svg-suffix-add-btn" onclick="addNewSvgSuffix()">+</button>
+        </div>
+      </div>
+
+      <div class="tag-modal-footer">
+        <button id="svg-suffix-export" onclick="closeSvgSuffixModal(); performSvgExport(selectedSvgSuffixes);">Export</button>
       </div>
     </div>
   </div>
@@ -1000,6 +1363,7 @@
     // Request saved theme from code.js on load
     parent.postMessage({ pluginMessage: { type: 'get-theme' } }, '*');
     parent.postMessage({ pluginMessage: { type: 'get-tags' } }, '*');
+    parent.postMessage({ pluginMessage: { type: 'get-svg-suffixes' } }, '*');
 
     document.getElementById('theme-btn').onclick = () => {
       const next = document.body.classList.contains('light') ? 'dark' : 'light';
@@ -1075,17 +1439,31 @@
     document.getElementById('refresh-btn').onclick = () => {
       const btn = document.getElementById('refresh-btn');
       const icon = btn.querySelector('svg');
-      
+
       btn.disabled = true;
       if(icon) icon.classList.add('spinning'); // Start animation
-      
+
       // Request refresh from backend
       parent.postMessage({ pluginMessage: { type: 'refresh-variables' } }, '*');
+
+      // Also refresh SVG selection if on SVG tab
+      if (document.getElementById('svg-tab').classList.contains('active')) {
+        requestSvgSelection();
+      }
+
+      // Same for the Collection Swap tab
+      if (document.getElementById('swap-tab').classList.contains('active')) {
+        requestSwapSelection();
+      }
     };
 
     // --- UPDATED MESSAGE HANDLER (Fixes Table Refresh) ---
     window.onmessage = (event) => {
-      const msg = event.data.pluginMessage;
+      // Not every message in this iframe is ours — JSZip's loader and Figma's own
+      // host chatter arrive here too, with no pluginMessage. Reading .type off
+      // those throws an uncaught TypeError and drops that message.
+      const msg = event.data && event.data.pluginMessage;
+      if (!msg || typeof msg !== 'object') return;
 
       if (msg.type === 'load-theme') {
         // Toggle is hidden — force the RePath light theme for now.
@@ -1095,6 +1473,11 @@
 
       if (msg.type === 'load-tags') {
         userTags = msg.tags || [];
+        return;
+      }
+
+      if (msg.type === 'load-svg-suffixes') {
+        userSvgSuffixes = msg.suffixes || [];
         return;
       }
 
@@ -1128,6 +1511,38 @@
             syncedTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
       }
+
+      if (msg.type === 'swap-selection') {
+        renderSwapPreviews(msg.nodes);
+        return;
+      }
+
+      if (msg.type === 'node-color-tokens') {
+        renderSwapTokens(msg);
+        return;
+      }
+
+      if (msg.type === 'swap-collections') {
+        renderSwapCollectionOptions(msg);
+        return;
+      }
+
+      if (msg.type === 'swap-applied') {
+        onSwapApplied(msg);
+        return;
+      }
+
+      if (msg.type === 'svg-selection') {
+        renderSvgPreviews(msg.nodes);
+      }
+
+      if (msg.type === 'svg-export-data') {
+        downloadSvgFiles(msg.exports);
+      }
+
+      if (msg.type === 'svg-color-collections') {
+        renderSvgModeGrid(msg.collections);
+      }
     };
 
     // --- COMPARISON TOGGLE LISTENER ---
@@ -1136,6 +1551,863 @@
         runComparison(lastUploadedData, lastUploadedFileName);
       }
     };
+
+    // --- SVG TAB LOGIC ---
+    let svgNodes = [];
+    let selectedSvgIds = new Set();
+
+    // SVG Suffix system (separate from variable tags)
+    const DEFAULT_SVG_SUFFIXES = ['light', 'dark', 'brand'];
+    // Dynamic tags don't tag the file with their own name. Date/Time append a computed
+    // value at the end of the tag chain. Collection and Mode are handled separately —
+    // see includeCollectionTag/includeModeTag in performSvgExport — since they sit
+    // directly in front of the mode segment rather than in the tag chain, and can
+    // differ per exported file. Mode is TokenHex-only: for Hex/Web the mode name is
+    // still always in the filename (those presets can export multiple, genuinely
+    // different-colored files per mode, so dropping it would make filenames ambiguous).
+    // `presets: null` means available for every preset; otherwise restricted to the
+    // presets that actually have a single collection/mode selection to name.
+    const DYNAMIC_SVG_TAG_DEFS = [
+      { key: 'collection', label: 'Collection', presets: ['TokenHex', 'Hex'] },
+      { key: 'mode', label: 'Mode', presets: ['TokenHex'] },
+      { key: 'date', label: 'Date', presets: null },
+      { key: 'time', label: 'Time', presets: null }
+    ];
+    const DYNAMIC_SVG_TAG_KEYS = DYNAMIC_SVG_TAG_DEFS.map(d => d.key);
+    let userSvgSuffixes = [];
+    let selectedSvgSuffixes = [];
+
+    // Zip filename — completely separate from the per-file tag chain above, and never
+    // touches the SVGs inside it. Date/Time are automatic (not user-toggled): whenever
+    // an export actually zips (multiple SVGs selected), every zip's name gets stamped.
+    // Collection IS user-toggled (Tag Folder section, TokenHex/Hex only) — since a
+    // single export can span multiple collections, turning it on splits the export into
+    // one zip per collection instead of naming a single combined zip.
+    let selectedSvgFolderTags = [];
+    let pendingZipStamp = { date: '', time: '' };
+
+    function renderSvgFolderTags() {
+      const container = document.getElementById('svg-folder-tags');
+      container.innerHTML = '';
+      const isSelected = selectedSvgFolderTags.includes('collection');
+
+      const pill = document.createElement('span');
+      pill.className = 'tag-pill tag-pill-dynamic' + (isSelected ? ' tag-selected' : '');
+      pill.textContent = 'Collection';
+
+      pill.addEventListener('click', () => {
+        if (isSelected) {
+          selectedSvgFolderTags = selectedSvgFolderTags.filter(t => t !== 'collection');
+        } else {
+          selectedSvgFolderTags.push('collection');
+        }
+        renderSvgFolderTags();
+      });
+
+      container.appendChild(pill);
+    }
+
+    function renderSvgTagPickers() {
+      renderSvgDynamicTags();
+      renderSvgSuffixModal();
+    }
+
+    function renderSvgDynamicTags() {
+      const container = document.getElementById('svg-dynamic-tags');
+      container.innerHTML = '';
+      const preset = document.getElementById('svg-preset').value;
+      DYNAMIC_SVG_TAG_DEFS.forEach(def => {
+        if (def.presets && !def.presets.includes(preset)) return;
+
+        // No order badge here — dynamic tags never carry a position number, they
+        // always land in the fixed order above regardless of click order.
+        const isSelected = selectedSvgSuffixes.includes(def.key);
+
+        const pill = document.createElement('span');
+        pill.className = 'tag-pill tag-pill-dynamic' + (isSelected ? ' tag-selected' : '');
+        pill.style.position = 'relative';
+        pill.textContent = def.label;
+
+        pill.addEventListener('click', () => {
+          if (isSelected) {
+            selectedSvgSuffixes = selectedSvgSuffixes.filter(s => s !== def.key);
+          } else {
+            selectedSvgSuffixes.push(def.key);
+          }
+          renderSvgTagPickers();
+        });
+
+        container.appendChild(pill);
+      });
+    }
+
+    // SVG Mode Selection system
+    let svgColorCollections = [];
+    let selectedModeSelections = []; // Array of {colId, modeId, colName, modeName}
+
+    function renderSvgSuffixModal() {
+      const container = document.getElementById('svg-suffix-tags');
+      container.innerHTML = '';
+      const allSuffixes = [...DEFAULT_SVG_SUFFIXES, ...userSvgSuffixes.filter(s => !DEFAULT_SVG_SUFFIXES.includes(s))];
+      // Order badges only number static tags relative to each other — dynamic tags
+      // are excluded from this list since they never carry a position number.
+      const staticSelected = selectedSvgSuffixes.filter(s => !DYNAMIC_SVG_TAG_KEYS.includes(s));
+      allSuffixes.forEach(suffix => {
+        const isDefault = DEFAULT_SVG_SUFFIXES.includes(suffix);
+        const orderIdx = staticSelected.indexOf(suffix);
+        const isSelected = orderIdx !== -1;
+
+        const pill = document.createElement('span');
+        pill.className = 'tag-pill' + (isSelected ? ' tag-selected' : '');
+        pill.style.position = 'relative';
+
+        let inner = suffix;
+        if (!isDefault) inner += '<button class="tag-remove" title="Remove suffix">&times;</button>';
+        if (isSelected && staticSelected.length > 1) inner += `<span class="tag-order-badge">${orderIdx + 1}</span>`;
+        pill.innerHTML = inner;
+
+        pill.addEventListener('click', (e) => {
+          if (e.target.classList.contains('tag-remove')) return;
+          if (isSelected) {
+            selectedSvgSuffixes = selectedSvgSuffixes.filter(s => s !== suffix);
+          } else {
+            selectedSvgSuffixes.push(suffix);
+          }
+          renderSvgTagPickers();
+        });
+
+        if (!isDefault) {
+          const removeBtn = pill.querySelector('.tag-remove');
+          if (removeBtn) {
+            removeBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              userSvgSuffixes = userSvgSuffixes.filter(s => s !== suffix);
+              selectedSvgSuffixes = selectedSvgSuffixes.filter(s => s !== suffix);
+              parent.postMessage({ pluginMessage: { type: 'set-svg-suffixes', suffixes: userSvgSuffixes } }, '*');
+              renderSvgTagPickers();
+            });
+          }
+        }
+        container.appendChild(pill);
+      });
+    }
+
+    function renderSvgModeGrid(collections) {
+      svgColorCollections = collections || [];
+      const container = document.getElementById('svg-mode-grid-container');
+
+      if (svgColorCollections.length === 0) {
+        container.innerHTML = '<div class="svg-mode-empty">No color tokens found in selection</div>';
+        return;
+      }
+
+      // Find all unique modes across collections (use first collection's modes as reference)
+      const allModes = svgColorCollections[0]?.modes || [];
+      if (allModes.length === 0) {
+        container.innerHTML = '<div class="svg-mode-empty">No modes found</div>';
+        return;
+      }
+
+      // TokenHex only picks ONE mode/collection to source its hex fallback from — the
+      // token names in the export never change, so more than one selection has no meaning.
+      const singleSelect = document.getElementById('svg-preset').value === 'TokenHex';
+
+      // Default to the parent collection's first mode so the radio always starts checked.
+      if (singleSelect && selectedModeSelections.length === 0) {
+        const firstParent = svgColorCollections.find(c => !c.isExtension) || svgColorCollections[0];
+        if (firstParent && firstParent.modes.length > 0) {
+          selectedModeSelections = [{
+            colId: firstParent.id,
+            modeId: firstParent.modes[0].modeId,
+            colName: firstParent.name,
+            modeName: firstParent.modes[0].name
+          }];
+        }
+      }
+
+      // Build grid: columns = modes, rows = collections
+      const colCount = allModes.length + 1; // +1 for row label column
+      let html = `<div class="svg-mode-grid" style="grid-template-columns: auto repeat(${allModes.length}, auto);">`;
+
+      // Header row
+      html += '<div class="svg-mode-grid-row">';
+      html += '<div class="svg-mode-cell header"></div>'; // Empty corner
+      for (const mode of allModes) {
+        html += `<div class="svg-mode-cell header">${mode.name}</div>`;
+      }
+      html += '</div>';
+
+      // Collection rows
+      for (const col of svgColorCollections) {
+        html += '<div class="svg-mode-grid-row">';
+        html += `<div class="svg-mode-cell row-label${col.isExtension ? ' is-ext' : ''}" title="${col.name}">${col.name}</div>`;
+
+        for (const mode of allModes) {
+          // Find matching mode in this collection
+          const colMode = col.modes.find(m => m.name === mode.name) || col.modes[allModes.indexOf(mode)];
+          if (colMode) {
+            const key = `${col.id}|${colMode.modeId}`;
+            const isChecked = selectedModeSelections.some(s => s.colId === col.id && s.modeId === colMode.modeId);
+            html += `<div class="svg-mode-cell">
+              <input type="${singleSelect ? 'radio' : 'checkbox'}" class="svg-mode-check"
+                ${singleSelect ? 'name="svg-mode-radio"' : ''}
+                data-colid="${col.id}" data-modeid="${colMode.modeId}"
+                data-colname="${col.name}" data-modename="${colMode.name}"
+                ${isChecked ? 'checked' : ''}
+                onchange="toggleModeSelection(this)">
+            </div>`;
+          } else {
+            html += '<div class="svg-mode-cell">—</div>';
+          }
+        }
+        html += '</div>';
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function toggleModeSelection(checkbox) {
+      const colId = checkbox.dataset.colid;
+      const modeId = checkbox.dataset.modeid;
+      const colName = checkbox.dataset.colname;
+      const modeName = checkbox.dataset.modename;
+
+      if (checkbox.type === 'radio') {
+        // Native radio already enforces exclusivity within the group; just mirror it.
+        selectedModeSelections = [{ colId, modeId, colName, modeName }];
+        return;
+      }
+
+      if (checkbox.checked) {
+        selectedModeSelections.push({ colId, modeId, colName, modeName });
+      } else {
+        selectedModeSelections = selectedModeSelections.filter(
+          s => !(s.colId === colId && s.modeId === modeId)
+        );
+      }
+    }
+
+    function showSvgSuffixModal() {
+      selectedSvgSuffixes = [];
+      selectedModeSelections = [];
+      renderSvgTagPickers();
+      document.getElementById('svg-suffix-input').value = '';
+      document.getElementById('svg-suffix-modal').style.display = 'flex';
+
+      const preset = document.getElementById('svg-preset').value;
+      const modeGridSection = document.getElementById('svg-mode-grid-section');
+
+      // Hide the collection x mode grid only for Token — it emits bare token names,
+      // identical in every mode, so there's nothing to pick. TokenHex still shows the
+      // grid (as single-select radios) to let the user choose the fallback hex source.
+      const modeAgnostic = preset === 'Token';
+      modeGridSection.style.display = modeAgnostic ? 'none' : 'block';
+      document.getElementById('svg-mode-grid-title').textContent =
+        preset === 'TokenHex' ? 'Select Fallback Source' : 'Color Mode Variants';
+
+      // Tag Folder only has anything to offer when this export will actually zip
+      // (multiple SVGs selected) and the preset has a collection to name it after.
+      selectedSvgFolderTags = [];
+      const showFolderTags = selectedSvgIds.size > 1 && (preset === 'TokenHex' || preset === 'Hex');
+      document.getElementById('svg-folder-tag-section').style.display = showFolderTags ? 'block' : 'none';
+      if (showFolderTags) renderSvgFolderTags();
+
+      if (preset === 'Token') {
+        renderSvgModeGrid([]);
+      } else if (selectedSvgIds.size > 0) {
+        parent.postMessage({
+          pluginMessage: {
+            type: 'get-svg-color-collections',
+            ids: Array.from(selectedSvgIds)
+          }
+        }, '*');
+      } else {
+        renderSvgModeGrid([]);
+      }
+    }
+
+    function closeSvgSuffixModal() {
+      document.getElementById('svg-suffix-modal').style.display = 'none';
+    }
+
+    document.getElementById('svg-suffix-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'svg-suffix-modal') closeSvgSuffixModal();
+    });
+
+    function addNewSvgSuffix() {
+      const input = document.getElementById('svg-suffix-input');
+      // Normalize: lowercase, replace spaces with hyphens
+      const suffix = input.value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      if (!suffix) return;
+      if (!DEFAULT_SVG_SUFFIXES.includes(suffix) && !userSvgSuffixes.includes(suffix)) {
+        userSvgSuffixes.push(suffix);
+        parent.postMessage({ pluginMessage: { type: 'set-svg-suffixes', suffixes: userSvgSuffixes } }, '*');
+      }
+      input.value = '';
+      renderSvgSuffixModal();
+    }
+
+    document.getElementById('svg-suffix-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addNewSvgSuffix(); }
+    });
+
+    function performSvgExport(suffixes) {
+      if (selectedSvgIds.size === 0) return;
+      const scale = parseInt(document.getElementById('svg-export-size').value, 10) || 1;
+      const preset = document.getElementById('svg-preset').value;
+
+      let modeSelections = selectedModeSelections;
+
+      if (preset === 'Token') {
+        // A bare token name is the same in every mode, so a mode selection would only
+        // produce duplicate files differing by suffix. Export one file per node, named
+        // from the node plus any tags — no mode in the filename.
+        modeSelections = [];
+      }
+      // TokenHex: modeSelections already holds the single radio pick (defaulted to the
+      // parent collection's first mode when the grid rendered), same as Web/Hex.
+
+      // Date/Time resolve to a computed value rather than their own name — same
+      // YYYYMMDD/HHMMSS format the token export filenames already use, same for every
+      // file in this export. Fixed after all static tags: Date, then Time.
+      const now = new Date();
+      const fileDate = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+      const fileTime = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+      const resolvedSuffixes = suffixes.filter(s => !DYNAMIC_SVG_TAG_KEYS.includes(s));
+      if (suffixes.includes('date')) resolvedSuffixes.push(fileDate);
+      if (suffixes.includes('time')) resolvedSuffixes.push(fileTime);
+
+      // Collection and Mode aren't part of the tag chain — they sit directly in front
+      // of the mode segment in the filename, so they're flags the backend applies per
+      // mode selection rather than values resolved once here (Hex/TokenHex can produce
+      // multiple files, each from a different collection or mode).
+      const includeCollectionTag = suffixes.includes('collection');
+      const includeModeTag = suffixes.includes('mode');
+
+      // Folder (zip) name — entirely separate from the per-file tag chain above, and
+      // never seen by the backend since it's applied client-side in downloadSvgFiles.
+      // Date/Time are stamped automatically whenever this export actually zips; the
+      // Collection split (if toggled in Tag Folder) is handled there using this stamp.
+      pendingZipStamp = { date: fileDate, time: fileTime };
+
+      parent.postMessage({
+        pluginMessage: {
+          type: 'export-svg',
+          ids: Array.from(selectedSvgIds),
+          scale: scale,
+          svgPreset: preset,  // 'Token' = token names, 'Web' = CSS vars, 'Hex' = flat hex
+          suffixes: resolvedSuffixes,
+          includeCollectionTag: includeCollectionTag,
+          includeModeTag: includeModeTag,
+          modeSelections: modeSelections  // Array of {colId, modeId, colName, modeName}
+        }
+      }, '*');
+    }
+
+    function requestSvgSelection() {
+      parent.postMessage({ pluginMessage: { type: 'get-svg-selection' } }, '*');
+    }
+
+    function renderSvgPreviews(nodes) {
+      svgNodes = nodes || [];
+      const emptyState = document.getElementById('svg-empty-state');
+      const grid = document.getElementById('svg-preview-grid');
+
+      if (svgNodes.length === 0) {
+        emptyState.style.display = 'block';
+        grid.style.display = 'none';
+        selectedSvgIds.clear();
+        updateSvgExportButton();
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      grid.style.display = 'grid';
+
+      selectedSvgIds = new Set(svgNodes.map(n => n.id));
+
+      grid.innerHTML = svgNodes.map(node => `
+        <div class="svg-preview-card selected" data-id="${node.id}" onclick="toggleSvgCard(this, '${node.id}')">
+          <div class="svg-thumb">${node.svg || '<svg viewBox="0 0 24 24"><rect fill="#ddd" width="24" height="24"/></svg>'}</div>
+          <div class="svg-name" title="${node.name}">${node.name}</div>
+          <div class="svg-size">${Math.round(node.width)} × ${Math.round(node.height)}</div>
+        </div>
+      `).join('');
+
+      updateSvgExportButton();
+    }
+
+    function toggleSvgCard(card, id) {
+      if (selectedSvgIds.has(id)) {
+        selectedSvgIds.delete(id);
+        card.classList.remove('selected');
+      } else {
+        selectedSvgIds.add(id);
+        card.classList.add('selected');
+      }
+      updateSvgExportButton();
+    }
+
+    function updateSvgExportButton() {
+      const btn = document.getElementById('svg-export-btn');
+      const count = selectedSvgIds.size;
+      btn.textContent = count > 0 ? `Export SVG (${count})` : 'Export SVG';
+      btn.disabled = count === 0;
+      btn.style.opacity = count === 0 ? '0.5' : '1';
+    }
+
+    document.getElementById('svg-export-btn').onclick = () => {
+      if (selectedSvgIds.size === 0) return;
+      showSvgSuffixModal();
+    };
+
+    function dedupeSvgExportNames(exports) {
+      // Same node name across multiple selected objects (e.g. two "icon-status" instances)
+      // would otherwise collide in the zip, silently dropping all but one. Only names
+      // that actually collide get a suffix — unique names are left untouched.
+      const counts = {};
+      exports.forEach(exp => { counts[exp.name] = (counts[exp.name] || 0) + 1; });
+      const seen = {};
+      return exports.map(exp => {
+        if (counts[exp.name] <= 1) return exp;
+        seen[exp.name] = (seen[exp.name] || 0) + 1;
+        return { ...exp, name: `${exp.name}-${seen[exp.name]}` };
+      });
+    }
+
+    async function downloadSvgFiles(exports) {
+      if (exports.length === 0) return;
+      exports = dedupeSvgExportNames(exports);
+
+      // Single file: download directly
+      if (exports.length === 1) {
+        const exp = exports[0];
+        const blob = new Blob([exp.svg], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${exp.name}.svg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      // Multiple files: bundle into ZIP. Always stamped with date+time; if the Collection
+      // Tag Folder toggle is on, split into one zip per distinct collection instead of
+      // one combined zip — exports with no collection (e.g. the Token preset) share a
+      // single ungrouped zip.
+      const stampSuffix = `-${pendingZipStamp.date}-${pendingZipStamp.time}`;
+      const useCollectionFolders = selectedSvgFolderTags.includes('collection');
+
+      const groups = {};
+      if (useCollectionFolders) {
+        exports.forEach(exp => {
+          const key = exp.colName || '';
+          (groups[key] || (groups[key] = [])).push(exp);
+        });
+      } else {
+        groups[''] = exports;
+      }
+
+      for (const colName of Object.keys(groups)) {
+        const zip = new JSZip();
+        groups[colName].forEach(exp => zip.file(`${exp.name}.svg`, exp.svg));
+
+        const smashedColName = colName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+        const zipBaseName = 'svg-export' + (smashedColName ? `-${smashedColName}` : '') + stampSuffix;
+
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${zipBaseName}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    // --- COLLECTION SWAP TAB LOGIC ---
+    // Same selection detection and card appearance as the SVG tab, but single-select.
+    // Picking a card opens a side panel listing its color tokens grouped by collection;
+    // each group has a target-collection dropdown, and the footer applies the swap.
+    const SWAP_ESC = (x) => String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    let swapNodes = [];
+    let selectedSwapIds = new Set();  // cmd/ctrl-click toggles, shift-click ranges
+    let swapAnchorIdx = null;         // range anchor for shift-click
+    let swapGroups = [];              // groups across the current selection
+    let swapCollectionOptions = [];   // every collection that can be swapped to
+    let swapCollectionsLoaded = false;
+    let swapCollectionsPending = false;
+    let swapLibraryError = null;
+    let swapTargets = {};             // rootCollectionId -> chosen option value
+
+    const SWAP_THUMB_PLACEHOLDER = '<svg viewBox="0 0 24 24"><rect fill="#ddd" width="24" height="24"/></svg>';
+
+    function requestSwapSelection() {
+      requestSwapCollections();
+      parent.postMessage({ pluginMessage: { type: 'get-swap-selection' } }, '*');
+    }
+
+    function requestSwapCollections() {
+      if (swapCollectionsLoaded || swapCollectionsPending) return;
+      swapCollectionsPending = true;
+      parent.postMessage({ pluginMessage: { type: 'get-swap-collections' } }, '*');
+    }
+
+    // Warm the list during startup rather than on the user's first click. Must run
+    // after the let declarations above (temporal dead zone), not with the other
+    // init postMessages near the top of this script.
+    requestSwapCollections();
+
+    function renderSwapPreviews(nodes) {
+      swapNodes = nodes || [];
+      const emptyState = document.getElementById('swap-empty-state');
+      const grid = document.getElementById('swap-preview-grid');
+
+      if (swapNodes.length === 0) {
+        emptyState.style.display = 'block';
+        grid.style.display = 'none';
+        grid.innerHTML = '';
+        closeSwapPanel();
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      grid.style.display = 'grid';
+
+      // Keep whatever is still in the Figma selection; otherwise start with everything
+      const stillPresent = new Set();
+      swapNodes.forEach(n => { if (selectedSwapIds.has(n.id)) stillPresent.add(n.id); });
+      selectedSwapIds = stillPresent.size > 0
+        ? stillPresent
+        : new Set(swapNodes.map(n => n.id));
+      swapAnchorIdx = null;
+
+      grid.innerHTML = swapNodes.map((node, i) => `
+        <div class="svg-preview-card${selectedSwapIds.has(node.id) ? ' selected' : ''}" data-id="${SWAP_ESC(node.id)}" data-idx="${i}" onclick="onSwapCardClick(event, this)">
+          <div class="svg-thumb">${node.svg || SWAP_THUMB_PLACEHOLDER}</div>
+          <div class="svg-name" title="${SWAP_ESC(node.name)}">${SWAP_ESC(node.name)}</div>
+          <div class="svg-size">${Math.round(node.width)} × ${Math.round(node.height)}</div>
+        </div>
+      `).join('');
+
+      requestSwapTokens();
+    }
+
+    // Plain click = replace selection · cmd/ctrl = toggle one · shift = extend a range
+    function onSwapCardClick(event, card) {
+      const id = card.dataset.id;
+      const idx = parseInt(card.dataset.idx, 10);
+      const additive = event.metaKey || event.ctrlKey;
+
+      if (event.shiftKey && swapAnchorIdx !== null) {
+        const lo = Math.min(swapAnchorIdx, idx);
+        const hi = Math.max(swapAnchorIdx, idx);
+        if (!additive) selectedSwapIds = new Set();
+        for (let i = lo; i <= hi; i++) selectedSwapIds.add(swapNodes[i].id);
+      } else if (additive) {
+        if (selectedSwapIds.has(id)) selectedSwapIds.delete(id);
+        else selectedSwapIds.add(id);
+        swapAnchorIdx = idx;
+      } else {
+        selectedSwapIds = new Set([id]);
+        swapAnchorIdx = idx;
+      }
+
+      refreshSwapCardStates();
+
+      if (selectedSwapIds.size === 0) {
+        document.getElementById('swap-panel').style.display = 'none';
+        swapGroups = [];
+        swapTargets = {};
+        updateSwapFooter();
+        return;
+      }
+      requestSwapTokens();
+    }
+
+    function refreshSwapCardStates() {
+      document.querySelectorAll('#swap-preview-grid .svg-preview-card').forEach(card => {
+        card.classList.toggle('selected', selectedSwapIds.has(card.dataset.id));
+      });
+    }
+
+    // Identifies a response so a slower one for an older selection can be discarded
+    function swapSelectionKey(ids) {
+      return Array.from(ids).slice().sort().join('|');
+    }
+
+    function requestSwapTokens() {
+      if (selectedSwapIds.size === 0) return;
+
+      // Pending swaps belong to the selection they were picked for
+      swapTargets = {};
+      swapGroups = [];
+      updateSwapFooter();
+
+      document.getElementById('swap-panel').style.display = 'flex';
+      document.getElementById('swap-panel-body').innerHTML =
+        '<div class="swap-panel-note">Reading color tokens…</div>';
+
+      parent.postMessage({
+        pluginMessage: { type: 'get-node-color-tokens', ids: Array.from(selectedSwapIds) }
+      }, '*');
+    }
+
+    function closeSwapPanel() {
+      document.getElementById('swap-panel').style.display = 'none';
+      selectedSwapIds = new Set();
+      swapAnchorIdx = null;
+      swapGroups = [];
+      swapTargets = {};
+      updateSwapFooter();
+      refreshSwapCardStates();
+    }
+
+    // Up to four previews in the space one would occupy; a fifth+ collapses into "+N"
+    function swapMosaicHtml(nodeIds) {
+      const nodes = (nodeIds || [])
+        .map(id => swapNodes.find(n => n.id === id))
+        .filter(Boolean);
+      const total = nodes.length;
+      if (total === 0) return '';
+
+      const cell = (node) =>
+        `<div class="swap-mosaic-cell" title="${SWAP_ESC(node.name)}">${node.svg || SWAP_THUMB_PLACEHOLDER}</div>`;
+
+      if (total === 1) return `<div class="swap-mosaic count-1">${cell(nodes[0])}</div>`;
+      if (total === 2) return `<div class="swap-mosaic count-2">${cell(nodes[0])}${cell(nodes[1])}</div>`;
+
+      let cells;
+      if (total === 3) {
+        // third goes bottom-left, bottom-right stays empty
+        cells = cell(nodes[0]) + cell(nodes[1]) + cell(nodes[2]) +
+          '<div class="swap-mosaic-cell is-empty"></div>';
+      } else if (total === 4) {
+        cells = nodes.slice(0, 4).map(cell).join('');
+      } else {
+        cells = nodes.slice(0, 3).map(cell).join('') +
+          `<div class="swap-mosaic-cell is-more" title="${total - 3} more">+${total - 3}</div>`;
+      }
+      return `<div class="swap-mosaic quad">${cells}</div>`;
+    }
+
+    // Build the target-collection dropdown for one group. Always includes the
+    // group's own collection so the default is selectable even if the file's
+    // library list doesn't surface it.
+    function swapTargetSelectHtml(group) {
+      // Until the target list arrives, show a disabled placeholder. Rendering the real
+      // control early listed only the group's own collection, which read as "there are
+      // no other options" rather than "not loaded yet".
+      if (!swapCollectionsLoaded) {
+        return `<select class="swap-target-select" data-group="${SWAP_ESC(group.id)}" disabled>
+          <option selected>Loading collections…</option>
+        </select>`;
+      }
+
+      const chosen = swapTargets[group.id] || group.optionValue || '';
+      const options = swapCollectionOptions.slice();
+
+      if (group.optionValue && !options.some(o => o.value === group.optionValue)) {
+        options.unshift({ value: group.optionValue, label: group.name, source: 'In use' });
+      }
+
+      // Group options under their source (this file / each library)
+      const sources = [];
+      for (const o of options) {
+        let bucket = sources.find(s => s.name === o.source);
+        if (!bucket) { bucket = { name: o.source, items: [] }; sources.push(bucket); }
+        bucket.items.push(o);
+      }
+
+      let html = `<select class="swap-target-select${chosen && chosen !== group.optionValue ? ' changed' : ''}" data-group="${SWAP_ESC(group.id)}" onchange="onSwapTargetChange(this)">`;
+      if (!chosen) html += '<option value="" selected>Unknown collection</option>';
+      for (const s of sources) {
+        html += `<optgroup label="${SWAP_ESC(s.name)}">`;
+        for (const o of s.items) {
+          const isCurrent = o.value === group.optionValue;
+          html += `<option value="${SWAP_ESC(o.value)}"${o.value === chosen ? ' selected' : ''}>${SWAP_ESC(o.label)}${isCurrent ? ' (current)' : ''}</option>`;
+        }
+        html += '</optgroup>';
+      }
+      html += '</select>';
+      return html;
+    }
+
+    function onSwapTargetChange(select) {
+      const groupId = select.dataset.group;
+      const group = swapGroups.find(g => g.id === groupId);
+      swapTargets[groupId] = select.value;
+
+      const changed = !!group && select.value !== group.optionValue;
+      select.classList.toggle('changed', changed);
+
+      const groupEl = select.closest('.swap-group');
+      if (groupEl) {
+        groupEl.classList.toggle('changed', changed);
+        const arrow = groupEl.querySelector('.swap-group-arrow');
+        if (arrow) {
+          const opt = select.options[select.selectedIndex];
+          arrow.textContent = changed && opt ? `→ ${opt.textContent}` : '';
+        }
+      }
+
+      updateSwapFooter();
+    }
+
+    function pendingSwaps() {
+      return swapGroups
+        .filter(g => swapTargets[g.id] && swapTargets[g.id] !== g.optionValue)
+        .map(g => ({
+          fromCollectionId: g.id,
+          toValue: swapTargets[g.id],
+          nodeIds: g.nodeIds || []
+        }));
+    }
+
+    // Objects touched by the pending swaps — each group only lists the nodes using it
+    function pendingSwapNodeIds() {
+      const ids = new Set();
+      pendingSwaps().forEach(s => s.nodeIds.forEach(id => ids.add(id)));
+      return Array.from(ids);
+    }
+
+    function updateSwapFooter() {
+      const note = document.getElementById('swap-pending-note');
+      const btn = document.getElementById('swap-apply-btn');
+      const pending = pendingSwaps();
+
+      const tokenCount = pending.reduce((sum, p) => {
+        const g = swapGroups.find(gg => gg.id === p.fromCollectionId);
+        return sum + (g ? g.tokens.length : 0);
+      }, 0);
+      const objectCount = pendingSwapNodeIds().length;
+
+      if (pending.length === 0) {
+        // Keep a library failure visible — otherwise the tab looks merely empty
+        note.textContent = swapLibraryError
+          ? swapLibraryError
+          : (swapCollectionsLoaded ? 'No collection changes' : 'Loading collections…');
+        note.classList.remove('active');
+      } else {
+        note.textContent = `${pending.length} collection${pending.length === 1 ? '' : 's'} · ${tokenCount} token${tokenCount === 1 ? '' : 's'} · ${objectCount} object${objectCount === 1 ? '' : 's'}`;
+        note.classList.add('active');
+      }
+
+      btn.disabled = pending.length === 0;
+    }
+
+    function renderSwapTokens(msg) {
+      // A later selection may have superseded this response
+      if (swapSelectionKey(msg.ids || []) !== swapSelectionKey(selectedSwapIds)) return;
+
+      const groups = msg.groups || [];
+      swapGroups = groups;
+
+      let html = '';
+
+      if (groups.length === 0) {
+        html += '<div class="swap-panel-note">No color tokens are bound in this selection.</div>';
+      } else {
+        for (const g of groups) {
+          const used = (g.nodeIds || []).length;
+          const only = used === 1 ? swapNodes.find(n => n.id === g.nodeIds[0]) : null;
+          const usedLabel = only
+            ? SWAP_ESC(only.name)
+            : `${used} object${used === 1 ? '' : 's'}`;
+
+          html += `<div class="swap-group">
+            <div class="swap-group-header">
+              <span title="${SWAP_ESC(g.name)}">${SWAP_ESC(g.name)}</span>
+              <span class="swap-group-count">${g.tokens.length}</span>
+            </div>
+            ${swapMosaicHtml(g.nodeIds)}
+            <div class="swap-panel-meta">${usedLabel} · ${g.tokens.length} token${g.tokens.length === 1 ? '' : 's'}</div>
+            ${swapTargetSelectHtml(g)}
+            <div class="swap-group-arrow"></div>`;
+          for (const t of g.tokens) {
+            const tip = `${t.fullName} — ${(t.properties || []).join(', ')}`;
+            html += `<div class="swap-token-row">
+              <span class="swap-swatch" style="background:${SWAP_ESC(t.hex)}"></span>
+              <span class="swap-token-name" title="${SWAP_ESC(tip)}">${SWAP_ESC(t.name)}</span>
+              ${t.viaExtension ? `<span class="swap-token-ext" title="${SWAP_ESC(t.viaExtension)}">EXT</span>` : ''}
+              <span class="swap-token-hex">${SWAP_ESC(t.hex)}</span>
+            </div>`;
+          }
+          html += '</div>';
+        }
+      }
+
+      document.getElementById('swap-panel-body').innerHTML = html;
+      updateSwapFooter();
+    }
+
+    function renderSwapCollectionOptions(msg) {
+      swapCollectionOptions = msg.options || [];
+      swapCollectionsLoaded = true;
+      swapCollectionsPending = false;
+
+      swapLibraryError = msg.libraryError || null;
+      if (swapLibraryError) console.warn(swapLibraryError);
+
+      // Swap the placeholders for real controls now that the list is in
+      if (selectedSwapIds.size === 0 || swapGroups.length === 0) return;
+      document.querySelectorAll('#swap-panel-body .swap-target-select').forEach(select => {
+        const group = swapGroups.find(g => g.id === select.dataset.group);
+        if (!group) return;
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = swapTargetSelectHtml(group);
+        const replacement = wrapper.firstElementChild;
+        if (replacement) select.replaceWith(replacement);
+      });
+      updateSwapFooter();
+    }
+
+    document.getElementById('swap-apply-btn').onclick = () => {
+      const swaps = pendingSwaps();
+      if (swaps.length === 0) return;
+
+      // Each group carries its own objects, so the union is exactly what's affected.
+      // A node that doesn't use a swapped collection simply has nothing to rebind.
+      const nodeIds = pendingSwapNodeIds();
+      if (nodeIds.length === 0) return;
+
+      const btn = document.getElementById('swap-apply-btn');
+      btn.disabled = true;
+      btn.textContent = 'Swapping…';
+
+      parent.postMessage({
+        pluginMessage: { type: 'apply-collection-swap', nodeIds: nodeIds, swaps: swaps }
+      }, '*');
+    };
+
+    function onSwapApplied(msg) {
+      const btn = document.getElementById('swap-apply-btn');
+      btn.textContent = 'Swap Tokens';
+
+      if (!msg.ok) {
+        document.getElementById('swap-pending-note').textContent = msg.error || 'Swap failed';
+        btn.disabled = false;
+        return;
+      }
+
+      if (msg.missing && msg.missing.length > 0) {
+        console.warn('No counterpart in the target collection for:', msg.missing);
+      }
+      if (msg.failed && msg.failed.length > 0) {
+        console.warn('Could not write these nodes:', msg.failed);
+      }
+
+      // Pull fresh thumbnails; that re-selects the current card, which reloads its
+      // tokens and clears the pending swaps
+      swapTargets = {};
+      requestSwapSelection();
+    }
 
    // --- TREE & RENDER LOGIC (No Changes) ---
    function buildTree(variables) {
@@ -1319,6 +2591,28 @@
       }
       rootCols.forEach(function(r){ walkCol(r, 0); });
 
+      // Nothing to draw? Distinguish "no variables at all" from "all of them are hidden"
+      let anyVariables = false;
+      let anyVisible = false;
+      collectionsData.forEach(function(c){
+        (c.variables || []).forEach(function(v){
+          anyVariables = true;
+          if (includeHidden || !v.hidden) anyVisible = true;
+        });
+      });
+      if (!anyVisible) {
+        renderTokensEmptyState(treeContainer, anyVariables);
+        updateExportButtonState();
+        if (window.lucide && lucide.createIcons) lucide.createIcons();
+        // Only worth animating if the user is actually looking at this tab
+        if (document.getElementById('export-tab').classList.contains('active')) {
+          pulseShowHidden();
+        }
+        return;
+      }
+
+      setShowHiddenAttention(false);
+
       orderedCols.forEach(function(entry){
         const col = entry.col;
         const depth = entry.depth;
@@ -1374,6 +2668,57 @@
       treeContainer.querySelectorAll('.var-item').forEach(refreshHighlights);
       updateExportButtonState();
       if (window.lucide && lucide.createIcons) lucide.createIcons();
+    }
+
+    // Empty states for the Tokens tab. Two distinct causes, so two distinct messages:
+    // the file genuinely has no variables, vs. it has some but they're all hidden from
+    // publishing and Show Hidden is off — the second is recoverable, so it offers the fix.
+    function renderTokensEmptyState(treeContainer, hasAnyVariables) {
+      // Only the recoverable case points at the toggle — if there are no variables
+      // at all, Show Hidden won't help and accenting it would be a false lead.
+      setShowHiddenAttention(hasAnyVariables);
+      if (hasAnyVariables) {
+        treeContainer.innerHTML =
+          '<div class="tab-empty-state">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'
+          + '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>'
+          + '<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>'
+          + '<path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"></path>'
+          + '<line x1="1" y1="1" x2="23" y2="23"></line>'
+          + '</svg>'
+          + '<div class="ees-title">No Visible Tokens</div>'
+          + '<div class="ees-hint">Every variable in this file is hidden from publishing.<br>Turn on <strong>Show Hidden</strong> above to see them.</div>'
+          + '</div>';
+      } else {
+        treeContainer.innerHTML =
+          '<div class="tab-empty-state">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'
+          + '<ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>'
+          + '<path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>'
+          + '<path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>'
+          + '</svg>'
+          + '<div class="ees-title">No variables in this file</div>'
+          + '<div class="ees-hint">Create a variable collection in Figma, then hit refresh to load it here</div>'
+          + '</div>';
+      }
+    }
+
+    // Accent the Show Hidden checkbox while the "No Visible Tokens" state is showing
+    function setShowHiddenAttention(on) {
+      const toggle = document.getElementById('show-hidden-toggle');
+      if (!toggle) return;
+      toggle.classList.toggle('attn', on);
+      if (!on) toggle.classList.remove('pulse');
+    }
+
+    // Pulse twice. No-ops unless the accent is active, so it's safe to call on any
+    // tab switch. Removing the class + forcing reflow is what lets it replay.
+    function pulseShowHidden() {
+      const toggle = document.getElementById('show-hidden-toggle');
+      if (!toggle || !toggle.classList.contains('attn')) return;
+      toggle.classList.remove('pulse');
+      void toggle.offsetWidth;
+      toggle.classList.add('pulse');
     }
 
     // --- UI HELPERS ---
@@ -1614,16 +2959,28 @@
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
       btn.classList.add('active');
-      
+
       const exportFooter = document.getElementById('footer-export');
       const changelogFooter = document.getElementById('footer-changelog');
-      
+      const svgFooter = document.getElementById('footer-svg');
+      const swapFooter = document.getElementById('footer-swap');
+
+      exportFooter.style.display = 'none';
+      changelogFooter.style.display = 'none';
+      svgFooter.style.display = 'none';
+      swapFooter.style.display = 'none';
+
       if (tabId === 'export-tab') {
         exportFooter.style.display = 'flex';
-        changelogFooter.style.display = 'none';
-      } else {
-        exportFooter.style.display = 'none';
+        pulseShowHidden(); // no-op unless the "No Visible Tokens" state is showing
+      } else if (tabId === 'changelog-tab') {
         changelogFooter.style.display = 'flex';
+      } else if (tabId === 'svg-tab') {
+        svgFooter.style.display = 'flex';
+        requestSvgSelection();
+      } else if (tabId === 'swap-tab') {
+        swapFooter.style.display = 'flex';
+        requestSwapSelection();
       }
     }
 
@@ -2035,8 +3392,14 @@
     function updateExportButtonState() {
       const anyChecked = Array.from(document.querySelectorAll('#tree .var-check')).some(c => c.checked);
       const btn = document.getElementById('export-btn');
-      if (btn) btn.classList.toggle('changelog-btn-disabled', !anyChecked);
+      if (btn) {
+        btn.classList.toggle('changelog-btn-disabled', !anyChecked);
+        const preset = document.getElementById('export-preset').value;
+        btn.textContent = preset === 'CSV' ? 'Export CSV' : 'Export JSON';
+      }
     }
+
+    document.getElementById('export-preset').addEventListener('change', updateExportButtonState);
 
     // --- CHANGELOG BUTTON STATE ---
     function updateChangelogButtonState() {
@@ -2190,6 +3553,11 @@
         preset: primitivesChecked ? [preset, 'Primitives'] : preset
       };
       if (tags.length > 0) metaData.tags = tags;
+
+      if (preset === 'CSV') {
+        triggerDownload(formatCsv(selectedKeys, metaData), `${exportName}.csv`, 'text/csv;charset=utf-8');
+        return;
+      }
 
       const jsonOutput = formatJson(selectedKeys, metaData, preset);
 
@@ -2440,6 +3808,120 @@
         if (childVal !== parentVal) return false;
       }
       return sharedModes > 0;
+    }
+
+    // CSV preset — one row per selected token, one column per selected mode.
+    //
+    // Each cell shows what the token actually uses for that mode: the alias mapping
+    // ("Blue/100") when it references another token, or the literal value (hex for
+    // colours) when it doesn't. Follows the Change Log CSV conventions — a single file,
+    // Collection as a column, and alias paths stripped of their collection segment.
+    function formatCsv(selectedKeys, metaData) {
+      const q = (s) => '"' + String(s === null || s === undefined ? '' : s).replace(/"/g, '""') + '"';
+
+      // Expose Underlying adds an "[Mode] Underlying" column immediately after each mode
+      // column, holding what the mapping in that mode actually resolves to.
+      const exposeUnderlying = document.getElementById('expose-underlying-toggle').checked;
+      const UNDERLYING = ' Underlying';
+      const NO_UNDERLYING = '–';
+
+      // Only an aliased value has anything underlying it. A literal (hex, number) is
+      // already shown in the mode column to its left, so mark it rather than repeat it.
+      // Same source formatJson uses for $underlyingValue: resolvedValuesByMode holds an
+      // RGB object for colours (not a hex string) and a number for floats.
+      const underlyingValue = (v, modeId) => {
+        const raw = v.valuesByMode ? v.valuesByMode[modeId] : undefined;
+        if (raw === undefined || raw === null) return '';
+        if (!raw || raw.type !== 'VARIABLE_ALIAS') return NO_UNDERLYING;
+
+        const r = v.resolvedValuesByMode ? v.resolvedValuesByMode[modeId] : undefined;
+        // Empty, not an en dash: there IS an alias here, we just couldn't follow it
+        if (r === undefined || r === null) return '';
+        if (typeof r === 'object' && r.r !== undefined) return rgbToHex(r);
+        return String(r);
+      };
+
+      const cellValue = (val, type) => {
+        if (val === undefined || val === null) return '';
+        if (val.type === 'VARIABLE_ALIAS') {
+          // Last two segments of the mapping, however deep the path is:
+          //   Primitive Color/RATIO/Blue/100               -> Blue/100
+          //   Primitive Color/RATIO/Accessibility/Blue/100 -> Blue/100
+          // Strip the leading collection segment first, otherwise a single-segment
+          // variable name ("Primitive Color/Blue") would keep the collection in the pair.
+          const path = (aliasMap[val.id] || 'unknown').replace(/[{}]/g, '');
+          const parts = path.split('/').filter(Boolean);
+          const withoutCollection = parts.length > 1 ? parts.slice(1) : parts;
+          return withoutCollection.slice(-2).join('/');
+        }
+        if (typeof val === 'object' && val.r !== undefined) return rgbToHex(val);
+        if (type === 'BOOLEAN') return val ? 'True' : 'False';
+        return String(val);
+      };
+
+      const rows = [];
+      const modeColumns = [];        // union of selected mode names, first-seen order
+      const seenModeColumn = {};
+
+      for (const col of collectionsData) {
+        const vars = col.variables.filter(v => selectedKeys.has(col.id + '|' + v.id));
+        if (vars.length === 0) continue;
+
+        // Respect the same mode column checkboxes the JSON export honours
+        const activeModes = col.modes.filter(function (mode, idx) {
+          const check = document.querySelector('.mode-col-check[data-colid="' + col.id + '"][data-modeidx="' + idx + '"]');
+          return !check || check.checked;
+        });
+        if (activeModes.length === 0) continue;
+
+        activeModes.forEach(m => {
+          if (!seenModeColumn[m.name]) { seenModeColumn[m.name] = true; modeColumns.push(m.name); }
+        });
+
+        // Collections share a column when their mode names match. Safe because every row
+        // names its collection, so a shared "Light" column never merges two values.
+        vars.forEach(v => {
+          const byMode = {};
+          activeModes.forEach(m => {
+            byMode[m.name] = cellValue(v.valuesByMode[m.modeId], v.type);
+            if (exposeUnderlying) byMode[m.name + UNDERLYING] = underlyingValue(v, m.modeId);
+          });
+          rows.push({ collection: col.name, token: v.name, byMode: byMode });
+        });
+      }
+
+      // Only disambiguate by collection when there is something to disambiguate. With a
+      // single collection the column is noise; with several, identically-named tokens
+      // (e.g. Buy in both iOS and Web) would otherwise be indistinguishable rows sharing
+      // the same mode column. Counts collections that actually contributed rows, not every
+      // collection in the file.
+      const contributing = [];
+      rows.forEach(r => { if (contributing.indexOf(r.collection) === -1) contributing.push(r.collection); });
+      const showCollection = contributing.length > 1;
+
+      // Interleave so each underlying column sits immediately right of its mode column
+      const valueColumns = [];
+      modeColumns.forEach(name => {
+        valueColumns.push(name);
+        if (exposeUnderlying) valueColumns.push(name + UNDERLYING);
+      });
+
+      const lines = [
+        ['Source File', metaData.originalFileName].map(q).join(','),
+        ['Exported', metaData.date + ' ' + metaData.time].map(q).join(','),
+        '',
+        (showCollection ? ['Collection', 'Token'] : ['Token']).concat(valueColumns).map(q).join(',')
+      ];
+
+      rows.forEach(r => {
+        lines.push(
+          (showCollection ? [q(r.collection), q(r.token)] : [q(r.token)])
+            .concat(valueColumns.map(name => q(r.byMode[name] !== undefined ? r.byMode[name] : '')))
+            .join(',')
+        );
+      });
+
+      return lines.join('\n');
     }
 
     function formatJson(selectedKeys, metaData, preset = "Default") {
