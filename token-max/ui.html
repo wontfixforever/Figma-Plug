@@ -3880,14 +3880,44 @@
 
         // Collections share a column when their mode names match. Safe because every row
         // names its collection, so a shared "Light" column never merges two values.
+        const colRows = [];
         vars.forEach(v => {
           const byMode = {};
           activeModes.forEach(m => {
             byMode[m.name] = cellValue(v.valuesByMode[m.modeId], v.type);
             if (exposeUnderlying) byMode[m.name + UNDERLYING] = underlyingValue(v, m.modeId);
           });
-          rows.push({ collection: col.name, token: v.name, byMode: byMode });
+          // v.name is Figma's full grouped path ("Accent/Accent", "Surface/On Surface").
+          // The Token column wants the variable's own name, same leaf-extraction idiom
+          // used elsewhere in this file (e.g. the preset leafName/baseName helpers below).
+          // group = the first path segment, same key formatJson nests its tree under
+          // (parts[0] there) — used below to re-cluster rows the same way the Variables
+          // panel groups by folder.
+          const nameParts = v.name.split('/');
+          const leaf = nameParts.pop().trim();
+          colRows.push({ collection: col.name, token: leaf, group: nameParts.length ? nameParts[0].trim() : leaf, byMode: byMode });
         });
+
+        // Re-cluster into Figma panel folders — NOT a sort, and scoped to this collection
+        // only (two collections can both have a "Positive" group; they must never merge).
+        // collection.variableIds (raw iteration order, see code.js) is not reliably
+        // folder-contiguous: a token added to Figma in a later authoring pass keeps its
+        // later position in that array even though the panel always nests it under its
+        // own family folder. Confirmed on a real export where every "On <Family> Inverse"
+        // token landed inside the NEXT family's block instead of its own — e.g. "On
+        // Positive Inverse" between "On Negative" and "On Negative Subtle". formatJson
+        // never has this problem: nesting by path segment into a dict self-corrects it as
+        // a side effect, because a later-inserted property still serializes inside its own
+        // group's block. A flat CSV has no such structure, so the grouping has to be done
+        // explicitly — stable: first-seen group order, each group's own members kept in
+        // their original encounter order.
+        const groupOrder = [];
+        const byGroup = {};
+        colRows.forEach(r => {
+          if (!byGroup[r.group]) { byGroup[r.group] = []; groupOrder.push(r.group); }
+          byGroup[r.group].push(r);
+        });
+        groupOrder.forEach(g => rows.push(...byGroup[g]));
       }
 
       // Only disambiguate by collection when there is something to disambiguate. With a
