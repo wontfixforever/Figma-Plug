@@ -427,7 +427,7 @@ figma.ui.onmessage = async (msg) => {
     const seenPerGroup = {}; // groupId -> { varId: token }, so tokens dedupe across nodes
 
     for (const nodeId of ids) {
-      const node = figma.getNodeById(nodeId);
+      const node = await figma.getNodeByIdAsync(nodeId);
       if (!node) continue;
 
       const bindings = await collectColorBindings(node, variableMap, []);
@@ -522,7 +522,7 @@ figma.ui.onmessage = async (msg) => {
     const stats = { swapped: 0, nodes: 0, missing: [], failed: [] };
 
     for (const id of nodeIds) {
-      const node = figma.getNodeById(id);
+      const node = await figma.getNodeByIdAsync(id);
       if (!node) continue;
       const before = stats.swapped;
       await swapNodeColorTokens(node, plan, colCache, varCache, stats);
@@ -567,7 +567,7 @@ figma.ui.onmessage = async (msg) => {
     const boundVarIds = new Set();
     const modeColIds = new Set();
     for (const id of msg.ids) {
-      const node = figma.getNodeById(id);
+      const node = await figma.getNodeByIdAsync(id);
       if (node) {
         await collectBoundVariableIds(node, boundVarIds, modeColIds);
       }
@@ -745,7 +745,7 @@ figma.ui.onmessage = async (msg) => {
       : '';
 
     for (const id of msg.ids) {
-      const node = figma.getNodeById(id);
+      const node = await figma.getNodeByIdAsync(id);
       if (node && canExportAsSvg(node)) {
         try {
           const baseName = node.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -1841,3 +1841,4 @@ function replaceSvgHexWithResolved(svgString, hexToResolvedMap) {
 
   return result;
 }
+// last modified by AI tools on 2026-11-02
