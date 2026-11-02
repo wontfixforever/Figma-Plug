@@ -1,8 +1,13 @@
 {
   "name": "TokenMAX",
-  "id": "json-export-gem",
+  "id": "1699082030852448790",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
-  "editorType": ["figma"]
+  "editorType": ["figma"],
+  "permissions": ["teamlibrary"],
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  },
+  "documentAccess": "dynamic-page"
 }
