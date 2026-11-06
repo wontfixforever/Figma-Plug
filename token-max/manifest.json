@@ -7,7 +7,13 @@
   "editorType": ["figma"],
   "permissions": ["teamlibrary"],
   "networkAccess": {
-    "allowedDomains": ["none"]
+    "allowedDomains": [
+      "https://cdnjs.cloudflare.com",
+      "https://unpkg.com",
+      "https://fonts.googleapis.com",
+      "https://fonts.gstatic.com"
+    ],
+    "reasoning": "Loads JSZip (multi-file SVG export), Lucide icons and the Inter font from public CDNs."
   },
   "documentAccess": "dynamic-page"
 }
